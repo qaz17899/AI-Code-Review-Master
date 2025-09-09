@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { ResultDisplay } from './ResultDisplay';
-import { generateChatStream, countResponseTokens } from '../services/aiService';
-import { countTokens as countGeminiTokens, scopeRelevantFiles } from '../services/geminiService';
-import { PROMPTS, DIFF_INSTRUCTION } from '../constants';
+import { generateChatStream, countResponseTokens, countInputTokens } from '../services/aiService';
+import { scopeRelevantFiles } from '../services/geminiService';
+import { PROMPTS, DIFF_INSTRUCTION } from './constants';
 import type { ReviewMode, ChatMessage, AppFile, Conversation } from '../types';
 import { StarIcon, MasterIcon } from './icons';
 import { useConversation } from '../contexts/ConversationContext';
@@ -37,7 +37,7 @@ export const CodeReviewer: React.FC = () => {
   const [inputTokenCount, setInputTokenCount] = useState<number | null>(null);
   const [isCountingTokens, setIsCountingTokens] = useState(false);
   const { settings } = useApiSettings();
-  const isAbortingRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const [exampleModalMode, setExampleModalMode] = useState<ReviewMode | null>(null);
 
@@ -83,9 +83,7 @@ export const CodeReviewer: React.FC = () => {
     const handler = setTimeout(async () => {
         setIsCountingTokens(true);
         try {
-            // Token counting is provider-specific. For a simple UI estimate, we'll use the Gemini service as it's local.
-            // A more complex solution could involve an aiService.countTokens dispatcher.
-            const count = await countGeminiTokens(filesToCount, userMessage, pastedImages, settings);
+            const count = await countInputTokens(provider, filesToCount, userMessage, pastedImages, settings);
             setInputTokenCount(count);
         } catch (error) {
             console.error("Error counting tokens for input:", error);
@@ -98,7 +96,7 @@ export const CodeReviewer: React.FC = () => {
     return () => {
         clearTimeout(handler);
     };
-  }, [selectedFilePaths, files, userMessage, pastedImages, settings]);
+  }, [selectedFilePaths, files, userMessage, pastedImages, settings, provider]);
   
   // Effect to filter files when accepted types change
   useEffect(() => {
@@ -138,7 +136,8 @@ export const CodeReviewer: React.FC = () => {
     
         let finalContent = '';
         for await (const chunk of stream) {
-            if (isAbortingRef.current) {
+            // The abort is now handled by the fetch signal, but this is a good safeguard.
+            if (abortControllerRef.current?.signal.aborted) {
                 console.log("User aborted generation.");
                 break;
             }
@@ -166,7 +165,7 @@ export const CodeReviewer: React.FC = () => {
             console.error("Failed to count response tokens:", e);
         }
     
-        const finalContentWithStatus = isAbortingRef.current 
+        const finalContentWithStatus = abortControllerRef.current?.signal.aborted
             ? (finalContent + '\n\n*<生成已由使用者中止>*')
             : finalContent;
     
@@ -202,7 +201,7 @@ export const CodeReviewer: React.FC = () => {
       return;
     }
 
-    isAbortingRef.current = false;
+    abortControllerRef.current = new AbortController();
     setSubmittingConversationId(conversation.id);
     setError('');
 
@@ -236,13 +235,15 @@ export const CodeReviewer: React.FC = () => {
             ? `${masterPromptTemplate}\n\n${DIFF_INSTRUCTION}`
             : masterPromptTemplate;
         
-        const promptTokenCount = await countGeminiTokens(filesToSubmit, messageToSend, imagesToSend, settings);
+        const promptTokenCount = await countInputTokens(provider, filesToSubmit, messageToSend, imagesToSend, settings);
 
+        const signal = abortControllerRef.current.signal;
         const stream = await generateChatStream({
             provider,
             history: historyForAPI,
             files: filesToSubmit,
             userMessage: messageToSend,
+            signal,
             images: imagesToSend,
             masterPrompt,
             settings
@@ -253,13 +254,14 @@ export const CodeReviewer: React.FC = () => {
     } catch (err) {
         console.error("Error during chat generation:", err);
         const errorMessage = err instanceof Error ? err.message : '與 AI 通訊時發生錯誤';
-        if (!isAbortingRef.current) {
+        if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
             setError(errorMessage);
             const currentHistory = [...updatedConversation.history];
             currentHistory[currentHistory.length - 1] = { role: 'model', content: `發生錯誤: ${errorMessage}` };
             onUpdateConversation({ ...updatedConversation, history: currentHistory });
         }
     } finally {
+       abortControllerRef.current = null;
        setSubmittingConversationId(null);
     }
   };
@@ -273,7 +275,9 @@ export const CodeReviewer: React.FC = () => {
   }
 
   const handleStopGeneration = useCallback(() => {
-    isAbortingRef.current = true;
+    abortControllerRef.current?.abort();
+    // 立即更新 UI 狀態，提供即時反饋
+    setSubmittingConversationId(null);
   }, []);
 
   const handleDeleteFromTurn = (indexToDelete: number) => {
@@ -329,7 +333,7 @@ export const CodeReviewer: React.FC = () => {
     const messageToSend = message;
     const imagesToSend = images || [];
 
-    isAbortingRef.current = false;
+    abortControllerRef.current = new AbortController();
     setSubmittingConversationId(conversation.id);
     setError('');
 
@@ -347,12 +351,14 @@ export const CodeReviewer: React.FC = () => {
               ? `${masterPromptTemplate}\n\n${DIFF_INSTRUCTION}`
               : masterPromptTemplate;
 
-          const promptTokenCount = await countGeminiTokens(filesToSubmit, messageToSend, imagesToSend, settings);
+          const promptTokenCount = await countInputTokens(provider, filesToSubmit, messageToSend, imagesToSend, settings);
+          const signal = abortControllerRef.current.signal;
 
           const stream = await generateChatStream({
               provider,
               history: historyForAPI, // Pass the history *before* the final user prompt
               files: filesToSubmit,
+              signal,
               userMessage: messageToSend,
               images: imagesToSend,
               masterPrompt,
@@ -364,13 +370,14 @@ export const CodeReviewer: React.FC = () => {
       } catch (err) {
           console.error("Error during chat regeneration:", err);
           const errorMessage = err instanceof Error ? err.message : '與 AI 通訊時發生錯誤';
-          if (!isAbortingRef.current) {
+          if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
               setError(errorMessage);
               const currentHistory = [...updatedConversation.history];
               currentHistory[currentHistory.length - 1] = { role: 'model', content: `發生錯誤: ${errorMessage}` };
               onUpdateConversation({ ...updatedConversation, history: currentHistory });
           }
       } finally {
+          abortControllerRef.current = null;
           setSubmittingConversationId(null);
       }
   }, [conversation, provider, mode, settings, onUpdateConversation, handleStreamingResponse]);
@@ -480,12 +487,12 @@ export const CodeReviewer: React.FC = () => {
           pastedImages={pastedImages}
           setPastedImages={setPastedImages}
           isCountingTokens={isCountingTokens}
-          tokenCount={inputTokenCount}
+          inputTokenCount={inputTokenCount}
         />
       </div>
       
       <div className={`relative transition-all duration-300`}>
-          <button onClick={handleStartReview} disabled={(selectedFilePaths.size === 0 && pastedImages.length === 0) || isSubmitting} className="relative overflow-hidden w-full flex items-center justify-center gap-2 p-4 accent-gradient-bg text-white text-lg font-bold rounded-lg shadow-lg hover:shadow-xl hover:shadow-[var(--accent-color)]/20 transition-all transform hover:-translate-y-px active:scale-[0.98] hover:brightness-105 active:brightness-110 disabled:from-stone-400 dark:disabled:from-slate-700 disabled:to-stone-300 dark:disabled:to-slate-600 disabled:text-stone-600 dark:disabled:text-slate-400 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none before:absolute before:inset-0 before:bg-black/15 dark:before:bg-black/20 before:transition-opacity hover:before:opacity-0 before:rounded-lg animate-subtle-pulse">
+          <button onClick={handleStartReview} disabled={(selectedFilePaths.size === 0 && pastedImages.length === 0) || isSubmitting} className="relative overflow-hidden w-full flex items-center justify-center gap-2 p-4 accent-gradient-bg text-white text-lg font-bold rounded-lg shadow-lg hover:shadow-xl hover:shadow-[var(--accent-color)]/20 transition-all duration-300 transform hover:-translate-y-px active:scale-[0.98] hover:brightness-105 active:brightness-110 disabled:from-stone-400 dark:disabled:from-slate-700 disabled:to-stone-300 dark:disabled:to-slate-600 disabled:text-stone-600 dark:disabled:text-slate-400 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none before:absolute before:inset-0 before:bg-black/15 dark:before:bg-black/20 before:transition-opacity hover:before:opacity-0 before:rounded-lg animate-subtle-pulse">
               <div className="relative z-10 flex items-center justify-center gap-2">
                 <StarIcon className="h-6 w-6" />
                 <span>開始審查</span>

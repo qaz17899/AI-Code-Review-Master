@@ -1,20 +1,22 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { PaperclipIcon, SendIcon, XIcon, TokenIcon } from './icons';
 import type { AppFile, ApiSettings } from '../types';
-import { countTokens } from '../services/geminiService';
-import { readFile } from '../utils';
+import { countInputTokens } from '../services/aiService';
+import { readFile, handleImagePaste } from '../utils';
 import { getFileIcon } from '../utils/fileTree';
 
 export const FollowUpForm: React.FC<{
     onFollowUp: (files: AppFile[], message: string, images: string[]) => Promise<void>;
     isSubmitting: boolean;
     onReadyForDrop: (handler: (files: FileList | File[]) => void) => void;
+    // FIX: Retrieve provider from active conversation to correctly dispatch token counting.
+    provider: ApiSettings['defaultProvider'];
     settings: ApiSettings;
-}> = ({ onFollowUp, isSubmitting, onReadyForDrop, settings }) => {
+}> = ({ onFollowUp, isSubmitting, onReadyForDrop, provider, settings }) => {
     const [files, setFiles] = useState<AppFile[]>([]);
     const [message, setMessage] = useState('');
     const [pastedImages, setPastedImages] = useState<string[]>([]);
-    const [tokenCount, setTokenCount] = useState<number | null>(null);
+    const [inputTokenCount, setInputTokenCount] = useState<number | null>(null);
     const [isCountingTokens, setIsCountingTokens] = useState(false);
     
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -33,24 +35,23 @@ export const FollowUpForm: React.FC<{
         const handler = setTimeout(async () => {
             const hasInput = files.length > 0 || pastedImages.length > 0 || message.trim();
             if (!hasInput) {
-                setTokenCount(null);
+                setInputTokenCount(null);
                 return;
             }
             setIsCountingTokens(true);
             try {
-                // Using Gemini's counter as a general estimator for the UI.
-                const count = await countTokens(files, message, pastedImages, settings);
-                setTokenCount(count);
+                const count = await countInputTokens(provider, files, message, pastedImages, settings);
+                setInputTokenCount(count);
             } catch (error) {
                 console.error("Error counting tokens for follow-up:", error);
-                setTokenCount(null);
+                setInputTokenCount(null);
             } finally {
                 setIsCountingTokens(false);
             }
         }, 500);
 
         return () => clearTimeout(handler);
-    }, [files, message, pastedImages, settings]);
+    }, [files, message, pastedImages, settings, provider]);
 
     const processAndSetFiles = useCallback(async (fileList: FileList | File[]) => {
         const selectedFiles = Array.from(fileList);
@@ -82,31 +83,10 @@ export const FollowUpForm: React.FC<{
         setFiles(prev => prev.filter(file => file.path !== filePath));
     };
 
-    const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-        const imageBlobs: File[] = [];
-        for (const item of e.clipboardData.items) {
-            if (item.type.includes('image')) {
-                const blob = item.getAsFile();
-                if (blob) {
-                    imageBlobs.push(blob);
-                }
-            }
-        }
-
-        if (imageBlobs.length > 0) {
-            e.preventDefault();
-            const newImagesPromises = imageBlobs.map(blob => 
-                new Promise<string>(resolve => {
-                    const reader = new FileReader();
-                    reader.onload = (event) => resolve(event.target?.result as string);
-                    reader.readAsDataURL(blob);
-                })
-            );
-
-            Promise.all(newImagesPromises).then(newImages => {
-                setPastedImages(prev => [...prev, ...newImages]);
-            });
-        }
+    const onPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+        handleImagePaste(e, newImages => {
+            setPastedImages(prev => [...prev, ...newImages]);
+        });
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -153,14 +133,14 @@ export const FollowUpForm: React.FC<{
                     <button type="button" onClick={() => fileInputRef.current?.click()} className="p-2 text-stone-600 dark:text-slate-400 hover:text-[var(--accent-color)] hover:bg-stone-300/50 dark:hover:bg-slate-700/50 rounded-lg transition-colors flex-shrink-0" aria-label="附加檔案">
                         <PaperclipIcon className="h-6 w-6" />
                     </button>
-                    <textarea ref={textareaRef} className="w-full bg-transparent text-stone-900 dark:text-slate-200 placeholder-stone-500 dark:placeholder-slate-500 focus:outline-none resize-none max-h-40 custom-scrollbar" rows={1} placeholder="補充說明、貼上圖片或提出具體問題..." value={message} onChange={(e) => setMessage(e.target.value)} onPaste={handlePaste} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(e); } }} />
+                    <textarea ref={textareaRef} className="w-full bg-transparent text-stone-900 dark:text-slate-200 placeholder-stone-500 dark:placeholder-slate-500 focus:outline-none resize-none max-h-40 custom-scrollbar" rows={1} placeholder="補充說明、貼上圖片或提出具體問題..." value={message} onChange={(e) => setMessage(e.target.value)} onPaste={onPaste} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(e); } }} />
                     <div className="flex-shrink-0 text-xs text-stone-500 dark:text-slate-500 flex items-center gap-1.5">
                         {isCountingTokens ? (
                              <div className="animate-spin h-3 w-3 border-2 border-stone-500 border-t-transparent rounded-full"></div>
-                        ) : tokenCount !== null ? (
-                            <div key={tokenCount} className="flex items-center gap-1.5 animate-fade-in" style={{ animationDuration: '300ms' }}>
+                        ) : inputTokenCount !== null ? (
+                            <div key={inputTokenCount} className="flex items-center gap-1.5 animate-fade-in" style={{ animationDuration: '300ms' }}>
                                 <TokenIcon className="h-3 w-3" />
-                                <span>{tokenCount.toLocaleString()} Tokens</span>
+                                <span>{inputTokenCount.toLocaleString()} Tokens</span>
                             </div>
                         ) : null}
                     </div>

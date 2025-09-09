@@ -88,7 +88,7 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                 <div className="flex-shrink-0 p-2 border-b border-stone-300 dark:border-slate-800/50">
                     <button
                         onClick={handleNew}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-stone-800 dark:text-slate-200 bg-stone-50/50 dark:bg-slate-800/50 hover:bg-stone-100/60 dark:hover:bg-slate-700/60 rounded-lg transition-colors border border-stone-400 dark:border-slate-700 active:brightness-95"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-stone-800 dark:text-slate-200 bg-stone-50/50 dark:bg-slate-800/50 hover:bg-stone-100/60 dark:hover:bg-slate-700/60 rounded-lg transition-all duration-200 border border-stone-400 dark:border-slate-700 active:scale-95 hover:border-[var(--accent-color)]/70"
                     >
                         <PlusIcon className="h-5 w-5" />
                         新的對話

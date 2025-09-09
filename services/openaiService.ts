@@ -33,6 +33,18 @@ export const countResponseTokens = async (
     return Promise.resolve(Math.ceil(text.length / 4));
 };
 
+export const countInputTokens = async (
+    files: AppFile[],
+    userMessage: string,
+    images: string[]
+): Promise<number> => {
+    // This is a rough estimation. For accurate counting, a client-side tokenizer like tiktoken is needed.
+    const fileText = files.map(f => f.content).join('\n');
+    const totalText = fileText + '\n' + userMessage;
+    const imageTokenCost = images.length * 85; // OpenAI's cost for low-res images
+    return Promise.resolve(Math.ceil(totalText.length / 4) + imageTokenCost);
+}
+
 
 export async function* generateOpenAIChatStream(
     history: ChatMessage[],
@@ -40,9 +52,9 @@ export async function* generateOpenAIChatStream(
     userMessage: string,
     images: string[],
     masterPrompt: string,
+    signal: AbortSignal,
     settings: ApiSettings
 ): AsyncGenerator<string> {
-    const controller = new AbortController();
     try {
         const apiKey = settings.openaiApiKey;
         if (!apiKey) {
@@ -90,7 +102,7 @@ export async function* generateOpenAIChatStream(
                 'Authorization': `Bearer ${apiKey}`,
             },
             body: JSON.stringify(body),
-            signal: controller.signal,
+            signal,
         });
 
         if (!response.ok || !response.body) {
@@ -129,7 +141,11 @@ export async function* generateOpenAIChatStream(
                 }
             }
         }
-    } finally {
-        controller.abort();
+    } catch (error) {
+        // If the fetch was aborted by our controller, it's not a real error.
+        // We just let the generator finish silently.
+        if (error.name !== 'AbortError') {
+            throw error;
+        }
     }
 }

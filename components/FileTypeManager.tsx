@@ -1,5 +1,7 @@
 
+
 import React, { useState, KeyboardEvent } from 'react';
+import { XIcon } from './icons';
 
 interface FileTypeManagerProps {
   types: string[];
@@ -43,15 +45,15 @@ export const FileTypeManager: React.FC<FileTypeManagerProps> = ({ types, onChang
       </label>
       <div className="flex flex-wrap items-center gap-2 p-2 bg-stone-200 dark:bg-slate-800 border-2 border-stone-300 dark:border-slate-700 rounded-lg focus-within:ring-2 focus-within:ring-[var(--accent-color)] transition">
         {types.map(type => (
-          <div key={type} className="flex items-center gap-1.5 bg-stone-300 dark:bg-slate-700 text-stone-800 dark:text-slate-200 text-sm font-mono px-2 py-1 rounded-md animate-fade-in">
+          <div key={type} className="flex items-center gap-1 bg-stone-300 dark:bg-slate-700 text-stone-800 dark:text-slate-200 text-sm font-mono pl-2.5 pr-1.5 py-1 rounded-full animate-fade-in">
             <span>{type}</span>
             <button
               type="button"
               onClick={() => handleRemoveType(type)}
-              className="text-stone-500 dark:text-slate-500 hover:text-red-400 transition-colors"
+              className="flex items-center justify-center h-4 w-4 rounded-full text-stone-600 dark:text-slate-400 hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-400 transition-colors"
               aria-label={`移除 ${type}`}
             >
-              &times;
+              <XIcon className="h-3 w-3" />
             </button>
           </div>
         ))}

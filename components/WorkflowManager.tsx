@@ -2,7 +2,7 @@ import React, { useState, useCallback, useRef } from 'react';
 import type { AppFile, ReviewMode } from '../types';
 import { useApiSettings } from '../contexts/ApiSettingsContext';
 import { generateChatStream } from '../services/aiService';
-import { PROMPTS, WORKFLOW_STEP_PROMPT, WORKFLOW_MODES } from '../constants';
+import { PROMPTS, WORKFLOW_STEP_PROMPT, WORKFLOW_MODES } from './constants';
 import { parseDiffs, applyPatch } from '../utils/patch';
 import { zipAndDownloadFiles } from '../utils';
 import { FileManagementArea } from './FileManagementArea';
@@ -36,6 +36,8 @@ export const WorkflowManager: React.FC = () => {
     const [currentProgress, setCurrentProgress] = useState({ cycle: 0, step: 0, mode: '' });
     const [finalFiles, setFinalFiles] = useState<AppFile[]>([]);
     const isAbortingRef = useRef(false);
+    // FIX: Add a ref for the AbortController to manage cancellation.
+    const abortControllerRef = useRef<AbortController | null>(null);
 
     const logContainerRef = useRef<HTMLDivElement>(null);
 
@@ -59,6 +61,7 @@ export const WorkflowManager: React.FC = () => {
         }
         setConfigError('');
         isAbortingRef.current = false;
+        abortControllerRef.current = new AbortController();
         setStatus('running');
         setLogs([]);
         
@@ -90,6 +93,8 @@ export const WorkflowManager: React.FC = () => {
                         images: [],
                         masterPrompt,
                         settings,
+                        // FIX: Pass the AbortSignal required by generateChatStream.
+                        signal: abortControllerRef.current.signal,
                     });
 
                     for await (const chunk of stream) {
@@ -123,7 +128,7 @@ export const WorkflowManager: React.FC = () => {
             setStatus('done');
         } catch (error) {
             const message = error instanceof Error ? error.message : '發生未知錯誤';
-            if (message.includes('stopped by user')) {
+            if (message.includes('stopped by user') || (error instanceof DOMException && error.name === 'AbortError')) {
                 setStatus('stopped');
                 addLog('error', '工作流已由使用者中止。');
             } else {
@@ -134,7 +139,10 @@ export const WorkflowManager: React.FC = () => {
         }
     };
     
-    const handleStopWorkflow = () => { isAbortingRef.current = true; };
+    const handleStopWorkflow = () => {
+        isAbortingRef.current = true;
+        abortControllerRef.current?.abort();
+    };
     const handleReset = () => {
         setFiles([]);
         setSelectedFilePaths(new Set());

@@ -1,7 +1,7 @@
 import React from 'react';
 import type { AppFile, ReviewMode } from '../types';
 import { MasterIcon } from './icons';
-import { DEEP_DIVE_MESSAGES, MODE_SPECIFIC_MESSAGES } from '../constants';
+import { DEEP_DIVE_MESSAGES, MODE_SPECIFIC_MESSAGES } from './constants';
 import { AnimatedMessage } from './AnimatedMessage';
 
 export const LoadingDisplay: React.FC<{ files: AppFile[], mode: ReviewMode }> = ({ files, mode }) => {

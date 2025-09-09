@@ -266,7 +266,7 @@ export const TesterIcon: React.FC<IconProps> = (props) => (
 
 export const EnhancementIcon: React.FC<IconProps> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.998 15.998 0 013.388-1.622m0 0a15.998 15.998 0 013.388-1.622m0 0a15.998 15.998 0 013.388-1.622m0 0a15.998 15.998 0 013.388-1.622m-13.5 6.484A15.998 15.998 0 0112 3.372m0 0c-3.388 0-6.44-1.24-8.77-3.372m17.54 0a15.998 15.998 0 00-8.77-3.372M12 3.372c-3.388 0-6.44 1.24-8.77 3.372" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.998 15.998 0 013.388-1.622m0 0a15.998 15.998 0 013.388-1.622m0 0a15.998 15.998 0 013.388-1.622m-13.5 6.484A15.998 15.998 0 0112 3.372m0 0c-3.388 0-6.44-1.24-8.77-3.372m17.54 0a15.998 15.998 0 00-8.77-3.372M12 3.372c-3.388 0-6.44 1.24-8.77 3.372" />
     </svg>
 );
 
@@ -356,5 +356,11 @@ export const DownloadIcon: React.FC<IconProps> = (props) => (
 export const SpinnerIcon: React.FC<IconProps> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" {...props}>
         <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.75" d="M12 3a9 9 0 11-9 9" />
+    </svg>
+);
+
+export const WandIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.998 15.998 0 013.388-1.622m0 0a15.998 15.998 0 013.388-1.622m0 0a15.998 15.998 0 013.388-1.622m-13.5 6.484A15.998 15.998 0 0112 3.372m0 0c-3.388 0-6.44-1.24-8.77-3.372m17.54 0a15.998 15.998 0 00-8.77-3.372M12 3.372c-3.388 0-6.44 1.24-8.77 3.372" />
     </svg>
 );

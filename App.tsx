@@ -32,6 +32,7 @@ const MODE_THEMES: Record<ReviewMode, { c1: string, c2: string }> = {
     DESIGNER:     { c1: 'rgba(147, 51, 234, 0.15)', c2: 'rgba(219, 39, 119, 0.15)' }, // Purple -> Pink
     ENHANCE:      { c1: 'rgba(192, 38, 211, 0.15)', c2: 'rgba(225, 29, 72, 0.15)' },   // Fuchsia -> Rose
     BALANCE:      { c1: 'rgba(13, 148, 136, 0.15)', c2: 'rgba(6, 182, 212, 0.15)' },   // Teal -> Cyan
+    POLISH:       { c1: 'rgba(219, 39, 119, 0.15)', c2: 'rgba(236, 72, 153, 0.15)' }, // Pink -> Rose
     // Automation
     WORKFLOW:     { c1: 'rgba(13, 148, 136, 0.15)', c2: 'rgba(8, 145, 178, 0.15)' },   // Teal -> Cyan
 };
@@ -58,6 +59,7 @@ const ACCENT_COLORS: Record<ReviewMode, { accent: string, hover: string, from: s
     DESIGNER:    { accent: '#a855f7', hover: '#c084fc', from: '#c084fc', to: '#d8b4fe' }, // purple-500
     ENHANCE:     { accent: '#ec4899', hover: '#f472b6', from: '#f472b6', to: '#f87171' }, // pink-500
     BALANCE:     { accent: '#14b8a6', hover: '#2dd4bf', from: '#2dd4bf', to: '#06b6d4' }, // teal-500
+    POLISH:      { accent: '#f43f5e', hover: '#fb7185', from: '#fb7185', to: '#f87171' }, // rose-500
     // Automation
     WORKFLOW:    { accent: '#0d9488', hover: '#14b8a6', from: '#14b8a6', to: '#0891b2' }, // teal-600
 }
@@ -129,7 +131,7 @@ const App: React.FC = () => {
                 </button>
                 <div className="hidden sm:flex items-center gap-3">
                     <div className="group relative flex items-center justify-center">
-                        <MasterIcon className="h-9 w-9 animate-spin-slow animate-master-pulse transition-all duration-300 group-hover:scale-110 group-hover:shadow-[0_0_15px_var(--accent-color)] rounded-full" style={{ animationDuration: '5s' }}/>
+                        <MasterIcon className="h-9 w-9 animate-spin-slow animate-master-pulse transition-all duration-300 group-hover:scale-110 group-hover:shadow-[0_0_15px_var(--accent-color)] rounded-full" style={{ animationDuration: '5s', transitionProperty: 'transform, box-shadow' }}/>
                     </div>
                     <div>
                         <h1 className="text-xl font-bold accent-gradient-text">AI Code Review Master</h1>
@@ -163,14 +165,14 @@ const App: React.FC = () => {
             <div className="flex items-center gap-1">
                 <button
                     onClick={() => setIsSettingsModalOpen(true)}
-                    className="p-2 rounded-full text-stone-600 dark:text-slate-400 hover:bg-stone-300 dark:hover:bg-slate-800 transition-all transform-gpu hover:scale-110 active:scale-95"
+                    className="p-2 rounded-full text-stone-600 dark:text-slate-400 hover:bg-stone-300/70 dark:hover:bg-slate-800/70 hover:text-[var(--accent-color)] transition-all duration-200 transform-gpu hover:scale-110 active:scale-95"
                     aria-label="API Settings"
                 >
                     <SettingsIcon className="h-6 w-6" />
                 </button>
                 <button
                     onClick={toggleTheme}
-                    className="p-2 rounded-full text-stone-600 dark:text-slate-400 hover:bg-stone-300 dark:hover:bg-slate-800 transition-all transform-gpu hover:scale-110 active:scale-95"
+                    className="p-2 rounded-full text-stone-600 dark:text-slate-400 hover:bg-stone-300/70 dark:hover:bg-slate-800/70 hover:text-[var(--accent-color)] transition-all duration-200 transform-gpu hover:scale-110 active:scale-95"
                     aria-label="Toggle theme"
                 >
                   <div className="relative h-6 w-6">

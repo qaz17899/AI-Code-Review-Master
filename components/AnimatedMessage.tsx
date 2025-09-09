@@ -1,24 +1,20 @@
 import React, { useState, useEffect } from 'react';
 
-// A component that displays messages, cycling through a list, without a typing animation.
 export const AnimatedMessage: React.FC<{ messages: string[]; className?: string }> = ({ messages, className = '' }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Effect to pick a random starting index once when the component mounts
   useEffect(() => {
     if (messages.length > 0) {
         setCurrentIndex(Math.floor(Math.random() * messages.length));
     }
   }, [messages.length]);
 
-  // Effect to handle message cycling logic
   useEffect(() => {
     if (messages.length <= 1) return;
 
-    // Interval to switch to the next message after a delay
     const timeout = setTimeout(() => {
         setCurrentIndex(prev => (prev + 1) % messages.length);
-    }, 3000); // Change message every 3 seconds
+    }, 3500); // Change message every 3.5 seconds
 
     return () => clearTimeout(timeout);
   }, [currentIndex, messages]);
@@ -26,8 +22,10 @@ export const AnimatedMessage: React.FC<{ messages: string[]; className?: string 
   const displayedText = messages[currentIndex] || '';
 
   return (
-    <p className={`font-mono ${className}`}>
-      {displayedText}
-    </p>
+    <div className="relative h-6 flex items-center justify-center">
+      <p key={displayedText} className={`font-mono absolute animate-[fade-in-up_0.5s_ease-out_forwards] ${className}`}>
+        {displayedText}
+      </p>
+    </div>
   );
 };

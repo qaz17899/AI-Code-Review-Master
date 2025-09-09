@@ -46,6 +46,7 @@
         --dark-bg: #10141c;
         --light-bg: #e7e5e4; /* stone-200 */
         background-color: var(--light-bg);
+        transition: background-color 0.3s ease-in-out;
       }
       html.dark body {
         background-color: var(--dark-bg);
@@ -210,10 +211,6 @@
                 '0%, 100%': { transform: 'scale(1)' },
                 '50%': { transform: 'scale(1.03)' },
               },
-              'slide-in-from-bottom': {
-                '0%': { opacity: '0', transform: 'translateY(20px)' },
-                '100%': { opacity: '1', transform: 'translateY(0)' },
-              },
             },
             animation: {
               'fade-in': 'fadeIn 0.5s ease-out forwards',
@@ -221,7 +218,6 @@
               'spin-slow': 'spin-slow 3s linear infinite',
               'master-pulse': 'master-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
               'subtle-pulse': 'subtle-pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-              'slide-in-from-bottom': 'slide-in-from-bottom 0.5s ease-out forwards',
             },
           },
         },
@@ -233,7 +229,9 @@
     "react/": "https://aistudiocdn.com/react@^19.1.1/",
     "react": "https://aistudiocdn.com/react@^19.1.1",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.16.0"
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.16.0",
+    "path": "https://aistudiocdn.com/path@^0.12.7",
+    "vite": "https://aistudiocdn.com/vite@^7.1.5"
   }
 }
 </script>

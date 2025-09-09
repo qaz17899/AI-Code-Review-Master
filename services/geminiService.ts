@@ -2,7 +2,7 @@
 // FIX: Removed `ModelParams` as it's no longer exported from `@google/genai`.
 import { GoogleGenAI, GenerateContentResponse, Content, Part, Type } from "@google/genai";
 import type { AppFile, ApiSettings, ChatMessage } from '../types';
-import { SCOPING_PROMPT } from '../constants';
+import { SCOPING_PROMPT } from '../components/constants';
 
 function getClient(settings: ApiSettings): GoogleGenAI {
     const apiKey = settings.geminiApiKey || process.env.GEMINI_API_KEY;
@@ -87,7 +87,7 @@ export const listModels = async (settings: ApiSettings): Promise<string[]> => {
 };
 
 
-export const countTokens = async (
+export const countInputTokens = async (
     files: AppFile[],
     userMessage: string,
     images: string[],
@@ -236,9 +236,9 @@ export async function* generateExplanationStream(
 async function* generateGeminiChatStreamWithProxy(
     contents: Content[],
     masterPrompt: string,
+    signal: AbortSignal,
     settings: ApiSettings
 ): AsyncGenerator<string> {
-    const controller = new AbortController();
     try {
         const apiKey = settings.geminiApiKey || process.env.GEMINI_API_KEY;
         const endpoint = settings.geminiProxyUrl?.replace(/\/$/, '');
@@ -258,7 +258,7 @@ async function* generateGeminiChatStreamWithProxy(
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body),
-            signal: controller.signal,
+            signal,
         });
 
         if (!response.ok || !response.body) {
@@ -296,9 +296,7 @@ async function* generateGeminiChatStreamWithProxy(
                 boundary = buffer.indexOf('\n\n');
             }
         }
-    } finally {
-        controller.abort();
-    }
+    } catch (error) { if (error.name !== 'AbortError') throw error; }
 }
 
 
@@ -308,6 +306,7 @@ export async function* generateGeminiChatStream(
     userMessage: string,
     images: string[],
     masterPrompt: string,
+    signal: AbortSignal,
     settings: ApiSettings
 ): AsyncGenerator<string> {
     const geminiHistory = chatHistoryToGeminiContent(history);
@@ -324,7 +323,7 @@ export async function* generateGeminiChatStream(
 
     // Use proxy if URL is provided
     if (settings.geminiProxyUrl) {
-        yield* generateGeminiChatStreamWithProxy(contents, masterPrompt, settings);
+        yield* generateGeminiChatStreamWithProxy(contents, masterPrompt, signal, settings);
         return;
     }
     
@@ -332,6 +331,9 @@ export async function* generateGeminiChatStream(
     const ai = getClient(settings);
     const modelName = settings.geminiModelId || 'gemini-2.5-pro';
 
+    // FIX: The `signal` property is not a valid property on the `GenerateContentParameters` type.
+    // This removes the property to resolve the compilation error. Cancellation for direct
+    // SDK calls is handled by the consuming loop checking the signal status.
     const stream = await ai.models.generateContentStream({
         model: modelName,
         contents: contents,

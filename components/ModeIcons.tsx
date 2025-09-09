@@ -19,6 +19,7 @@ import {
     CheckBadgeIcon,
     ScissorsIcon,
     WorkflowIcon,
+    WandIcon,
 } from './icons';
 
 export const getModeIcon = (mode: ReviewMode, className: string): JSX.Element => {
@@ -42,6 +43,7 @@ export const getModeIcon = (mode: ReviewMode, className: string): JSX.Element =>
         case 'DOCS': return <DocumentationIcon {...props} />;
         case 'CONSOLIDATE': return <BroomIcon {...props} />;
         case 'WORKFLOW': return <WorkflowIcon {...props} />;
+        case 'POLISH': return <WandIcon {...props} />;
         default: return <StarIcon {...props} />;
     }
 };
@@ -65,6 +67,7 @@ export const MODE_DESCRIPTIONS: Record<ReviewMode, string> = {
     DOCS: '為程式碼自動產生註解和技術文件。',
     CONSOLIDATE: '統一程式碼庫中的命名、風格和重複邏輯。',
     WORKFLOW: '設定一個多步驟、可重複執行的自動化工作流來持續優化您的專案。',
+    POLISH: '優化前端程式碼，提升 UI 視覺美感與 UX 互動體驗。',
 };
 
 type Example = { title: string; prompt: string; response: string; };
@@ -456,5 +459,33 @@ function isUserActive(user) { ... }`,
 - **修改檔案數：** 5
 
 您可以檢視下方最終的檔案狀態，或將整個專案打包下載。`
+    },
+    POLISH: {
+        title: 'UI/UX 潤飾 (Polish)',
+        prompt: `<!-- button.html -->
+<button class="bg-blue-500 text-white p-2 rounded">
+  Click Me
+</button>`,
+        response: `### UI/UX 潤飾建議
+
+這個按鈕缺少互動回饋，會讓使用者感覺遲鈍。我們可以透過增加轉場效果和 hover/active 狀態來顯著提升體驗。
+
+#### 修改建議
+
+\`\`\`diff
+--- a/button.html
++++ b/button.html
+@@ -1,3 +1,3 @@
+-<button class="bg-blue-500 text-white p-2 rounded">
++<button class="bg-blue-500 text-white px-4 py-2 rounded font-semibold transition-all duration-200 ease-in-out hover:bg-blue-600 active:scale-95 transform">
+   Click Me
+ </button>
+\`\`\`
+
+#### 設計理念
+1.  **\`transition-all\`**: 讓所有屬性變化（如背景色和大小）都變得平滑。
+2.  **\`hover:bg-blue-600\`**: 當滑鼠懸停時，按鈕顏色變深，提供視覺回饋。
+3.  **\`active:scale-95\`**: 當使用者點擊時，按鈕會輕微縮小，模擬真實的按壓感。
+4.  **調整內距 (\`p-2\` -> \`px-4 py-2\`)**: 讓按鈕看起來更均衡。`
     },
 };

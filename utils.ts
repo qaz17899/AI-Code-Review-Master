@@ -80,3 +80,34 @@ export const unzipFile = async (zipFile: File): Promise<UploadPayload[]> => {
 
     return Promise.all(payloads);
 };
+
+/**
+ * Handles paste events to extract images from the clipboard.
+ * @param e The clipboard event.
+ * @param onImagesPasted A callback function to handle the extracted base64 image strings.
+ */
+export const handleImagePaste = (
+    e: React.ClipboardEvent,
+    onImagesPasted: (images: string[]) => void
+): void => {
+    const imageBlobs: File[] = [];
+    for (const item of e.clipboardData.items) {
+        if (item.type.includes('image')) {
+            const blob = item.getAsFile();
+            if (blob) imageBlobs.push(blob);
+        }
+    }
+
+    if (imageBlobs.length > 0) {
+        e.preventDefault();
+        const newImagesPromises = imageBlobs.map(blob => 
+            new Promise<string>(resolve => {
+                const reader = new FileReader();
+                reader.onload = (event) => resolve(event.target?.result as string);
+                reader.readAsDataURL(blob);
+            })
+        );
+
+        Promise.all(newImagesPromises).then(onImagesPasted);
+    }
+};

@@ -3,7 +3,7 @@ import { SafeMarkdown } from './SafeMarkdown';
 import { CodeBlock } from './CodeBlock';
 import { CopyIcon, CheckIcon, MasterIcon, DownloadIcon, SpinnerIcon } from './icons';
 import { AnimatedMessage } from './AnimatedMessage';
-import { DEEP_DIVE_MESSAGES } from '../constants';
+import { DEEP_DIVE_MESSAGES } from './constants';
 import { parseDiffs, applyPatch } from '../utils/patch';
 import type { ChatMessage } from '../types';
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { XIcon, TokenIcon } from './icons';
+import { handleImagePaste } from '../utils';
 
 interface PromptInputAreaProps {
     userMessage: string;
@@ -7,36 +8,15 @@ interface PromptInputAreaProps {
     pastedImages: string[];
     setPastedImages: (images: string[]) => void;
     isCountingTokens: boolean;
-    tokenCount: number | null;
+    inputTokenCount: number | null;
 }
 
 export const PromptInputArea: React.FC<PromptInputAreaProps> = (props) => {
-
-    const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-        const imageBlobs: File[] = [];
-        for (const item of e.clipboardData.items) {
-            if (item.type.includes('image')) {
-                const blob = item.getAsFile();
-                if (blob) {
-                    imageBlobs.push(blob);
-                }
-            }
-        }
-
-        if (imageBlobs.length > 0) {
-            e.preventDefault();
-            const newImagesPromises = imageBlobs.map(blob => 
-                new Promise<string>(resolve => {
-                    const reader = new FileReader();
-                    reader.onload = (event) => resolve(event.target?.result as string);
-                    reader.readAsDataURL(blob);
-                })
-            );
-
-            Promise.all(newImagesPromises).then(newImages => {
-                props.setPastedImages([...props.pastedImages, ...newImages]);
-            });
-        }
+    
+    const onPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+        handleImagePaste(e, newImages => {
+            props.setPastedImages([...props.pastedImages, ...newImages]);
+        });
     };
 
     return (
@@ -62,14 +42,14 @@ export const PromptInputArea: React.FC<PromptInputAreaProps> = (props) => {
                         ))}
                     </div>
                 )}
-                <textarea className="w-full p-3 bg-stone-200 dark:bg-slate-800/60 border-2 border-stone-300 dark:border-slate-700 rounded-lg text-stone-800 dark:text-slate-200 focus:ring-2 focus:ring-[var(--accent-color)] focus:border-[var(--accent-color)] outline-none transition custom-scrollbar" rows={4} placeholder="例如：請專注於檢查 auth.py 中的安全性問題，或貼上圖片..." value={props.userMessage} onChange={(e) => props.setUserMessage(e.target.value)} onPaste={handlePaste} />
+                <textarea className="w-full p-3 bg-stone-200 dark:bg-slate-800/60 border-2 border-stone-300 dark:border-slate-700 rounded-lg text-stone-800 dark:text-slate-200 focus:ring-2 focus:ring-[var(--accent-color)] focus:border-[var(--accent-color)] outline-none transition custom-scrollbar" rows={4} placeholder="例如：請專注於檢查 auth.py 中的安全性問題，或貼上圖片..." value={props.userMessage} onChange={(e) => props.setUserMessage(e.target.value)} onPaste={onPaste} />
                 <div className="absolute bottom-3 right-3 text-xs text-stone-500 dark:text-slate-500 flex items-center gap-1.5">
                     {props.isCountingTokens ? (
                         <div className="animate-spin h-3 w-3 border-2 border-stone-500 border-t-transparent rounded-full"></div>
-                    ) : props.tokenCount !== null ? (
-                        <div key={props.tokenCount} className="flex items-center gap-1.5 animate-fade-in" style={{ animationDuration: '300ms' }}>
+                    ) : props.inputTokenCount !== null ? (
+                        <div key={props.inputTokenCount} className="flex items-center gap-1.5 animate-fade-in" style={{ animationDuration: '300ms' }}>
                             <TokenIcon className="h-3 w-3" />
-                            <span>{props.tokenCount.toLocaleString()} Tokens</span>
+                            <span>{props.inputTokenCount.toLocaleString()} Tokens</span>
                         </div>
                     ) : null}
                 </div>

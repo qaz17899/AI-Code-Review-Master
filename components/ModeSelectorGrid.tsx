@@ -23,7 +23,7 @@ const MODE_CATEGORIES: { title: string; modes: ReviewMode[] }[] = [
     },
     {
         title: '創意與問答',
-        modes: ['Q&A', 'DESIGNER', 'ENHANCE', 'BALANCE']
+        modes: ['Q&A', 'DESIGNER', 'ENHANCE', 'BALANCE', 'POLISH']
     }
 ];
 

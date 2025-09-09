@@ -8,6 +8,7 @@ import { FollowUpForm } from './FollowUpForm';
 import { ModelMessage } from './ModelMessage';
 import { ExplanationDisplay } from './ExplanationDisplay';
 import { SubmittedFileTree } from './SubmittedFileTree';
+import { useConversation } from '../contexts/ConversationContext';
 
 interface ResultDisplayProps {
   history: ChatMessage[];
@@ -62,6 +63,7 @@ const MessageToolbar: React.FC<{
 
 
 export const ResultDisplay: React.FC<ResultDisplayProps> = ({ history, onFollowUp, isSubmitting, onDeleteFromTurn, onRegenerate, onStopGeneration, settings }) => {
+    const { activeConversation } = useConversation();
     const [viewingImage, setViewingImage] = useState<string | null>(null);
     const [isDraggingOver, setIsDraggingOver] = useState(false);
     const [explanationState, setExplanationState] = useState<Record<number, {
@@ -301,7 +303,7 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ history, onFollowU
                         if (msg.role === 'model') {
                             const prevUserMessage = index > 0 && history[index - 1].role === 'user' ? history[index - 1] : undefined;
                             return (
-                                <div key={index} ref={el => { if (el) messageRefs.current.set(index, el); }} className="animate-slide-in-from-bottom" onMouseEnter={() => handleShowToolbar(index)} onMouseLeave={handleHideToolbar}>
+                                <div key={index} ref={el => { if (el) messageRefs.current.set(index, el); }} className="animate-fade-in-up" onMouseEnter={() => handleShowToolbar(index)} onMouseLeave={handleHideToolbar}>
                                     <div className="flex items-start gap-4">
                                         <MasterIcon className="h-8 w-8 text-[var(--accent-color)] flex-shrink-0 mt-1" />
                                         <div className="flex-grow min-w-0 relative">
@@ -328,7 +330,7 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ history, onFollowU
                         }
                         
                         return (
-                             <div key={index} ref={el => { if (el) messageRefs.current.set(index, el); }} className="animate-slide-in-from-bottom" onMouseEnter={() => handleShowToolbar(index)} onMouseLeave={handleHideToolbar}>
+                             <div key={index} ref={el => { if (el) messageRefs.current.set(index, el); }} className="animate-fade-in-up" onMouseEnter={() => handleShowToolbar(index)} onMouseLeave={handleHideToolbar}>
                                 <div className="flex items-start gap-4">
                                     <div className="h-8 w-8 rounded-full bg-stone-300 dark:bg-slate-700 flex items-center justify-center flex-shrink-0 mt-1">
                                         <UserIcon className="h-5 w-5 text-stone-600 dark:text-slate-400" />
@@ -357,8 +359,8 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ history, onFollowU
                     })}
                     {!isSubmitting && history.length > 0 && (
                         <div className="flex justify-center animate-fade-in">
-                            <button onClick={onRegenerate} className="flex items-center gap-2 px-4 py-1.5 bg-stone-500/10 text-stone-600 dark:text-slate-400 border border-stone-500/20 rounded-full hover:bg-stone-500/20 transition-colors text-sm font-semibold">
-                                <RefactorIcon className="h-4 w-4" />
+                            <button onClick={onRegenerate} className="group flex items-center gap-2 px-4 py-1.5 bg-stone-200/50 dark:bg-slate-800/50 text-stone-600 dark:text-slate-400 border border-stone-400/50 dark:border-slate-700/50 rounded-full hover:border-[var(--accent-color)]/50 hover:bg-stone-300/50 dark:hover:bg-slate-800 transition-all duration-200 text-sm font-semibold">
+                                <RefactorIcon className="h-4 w-4 transition-colors group-hover:text-[var(--accent-color)]" />
                                 重新生成
                             </button>
                         </div>
@@ -410,7 +412,7 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ history, onFollowU
                         </button>
                     </div>
                 ) : (
-                    <FollowUpForm onFollowUp={onFollowUp} isSubmitting={isSubmitting} onReadyForDrop={handleReadyForDrop} settings={settings} />
+                    <FollowUpForm onFollowUp={onFollowUp} isSubmitting={isSubmitting} onReadyForDrop={handleReadyForDrop} provider={activeConversation?.provider || 'gemini'} settings={settings} />
                 )}
             </div>
         </div>
