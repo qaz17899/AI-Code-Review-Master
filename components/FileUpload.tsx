@@ -1,0 +1,185 @@
+import React, { useState, useCallback, useRef } from 'react';
+import { UploadIcon } from './icons';
+
+// Interface for the payload emitted by this component
+interface UploadPayload {
+  file: File;
+  path: string;
+}
+
+interface FileUploadProps {
+  onFilesChange: (files: UploadPayload[]) => void;
+  acceptedTypes?: string[];
+}
+
+const SUPPORTED_FILE_TYPES = [".py", ".yaml", ".yml"];
+
+// Helper function to get a File object and its path from a FileSystemFileEntry
+function getUploadPayloadFromFileEntry(fileEntry: FileSystemFileEntry): Promise<UploadPayload> {
+  return new Promise((resolve, reject) => {
+    fileEntry.file(
+      (file) => {
+        // The fullPath property gives the relative path including parent directories.
+        // It often starts with a '/', which we remove to be consistent with webkitRelativePath.
+        const path = fileEntry.fullPath.startsWith('/') ? fileEntry.fullPath.substring(1) : fileEntry.fullPath;
+        resolve({ file, path });
+      },
+      reject
+    );
+  });
+}
+
+// Helper function to read all entries from a directory reader, handling pagination.
+function readAllEntries(dirReader: FileSystemDirectoryReader): Promise<FileSystemEntry[]> {
+    return new Promise((resolve, reject) => {
+        const allEntries: FileSystemEntry[] = [];
+        
+        const readEntriesBatch = () => {
+            dirReader.readEntries(entries => {
+                if (entries.length === 0) {
+                    resolve(allEntries);
+                    return;
+                }
+                allEntries.push(...entries);
+                readEntriesBatch(); // read the next batch
+            }, reject);
+        };
+
+        readEntriesBatch();
+    });
+}
+
+// Helper function to recursively get all files from a directory entry
+async function getFilesFromDirectoryEntry(entry: FileSystemDirectoryEntry): Promise<UploadPayload[]> {
+    const reader = entry.createReader();
+    const entries = await readAllEntries(reader);
+
+    const payloads: UploadPayload[] = [];
+    for (const subEntry of entries) {
+        if (subEntry.isFile) {
+            payloads.push(await getUploadPayloadFromFileEntry(subEntry as FileSystemFileEntry));
+        } else if (subEntry.isDirectory) {
+            payloads.push(...await getFilesFromDirectoryEntry(subEntry as FileSystemDirectoryEntry));
+        }
+    }
+    return payloads;
+}
+
+export const FileUpload: React.FC<FileUploadProps> = ({ onFilesChange, acceptedTypes = SUPPORTED_FILE_TYPES }) => {
+  const [isDragging, setIsDragging] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback(async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    let allPayloads: UploadPayload[] = [];
+    const items = e.dataTransfer.items;
+
+    if (items && items.length > 0) {
+        const entryPromises: Promise<UploadPayload[]>[] = [];
+        for (const item of items) {
+            const entry = item.webkitGetAsEntry();
+            if (!entry) continue;
+
+            if (entry.isFile) {
+                entryPromises.push(getUploadPayloadFromFileEntry(entry as FileSystemFileEntry).then(payload => [payload]));
+            } else if (entry.isDirectory) {
+                entryPromises.push(getFilesFromDirectoryEntry(entry as FileSystemDirectoryEntry));
+            }
+        }
+        
+        try {
+            const payloadArrays = await Promise.all(entryPromises);
+            allPayloads = payloadArrays.flat();
+        } catch (error) {
+            console.error("Error processing dropped items:", error);
+            // Fallback for safety, though less reliable for folder structure
+            const files = Array.from(e.dataTransfer.files);
+            allPayloads = files.map(file => ({ file, path: (file as any).webkitRelativePath || file.name }));
+        }
+    } else {
+        // Fallback for browsers without item support or when dropping only files
+        const files = Array.from(e.dataTransfer.files);
+        allPayloads = files.map(file => ({ file, path: (file as any).webkitRelativePath || file.name }));
+    }
+    
+    if (allPayloads.length > 0) {
+      onFilesChange(allPayloads);
+    }
+  }, [onFilesChange]);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+        const files = Array.from(e.target.files);
+        const payloads: UploadPayload[] = files.map(file => ({
+            file,
+            path: (file as any).webkitRelativePath || file.name,
+        }));
+        if (payloads.length > 0) {
+          onFilesChange(payloads);
+        }
+    }
+    // Reset input value to allow re-uploading the same file/folder
+    e.target.value = '';
+  };
+  
+  const handleClick = () => {
+      inputRef.current?.click();
+  }
+
+  const dragClasses = isDragging
+    ? 'border-[var(--accent-color)] bg-[var(--accent-color)]/10 ring-2 ring-[var(--accent-color)] shadow-inner'
+    : 'border-stone-500 dark:border-slate-700 bg-stone-300/50 dark:bg-slate-800/60 hover:border-[var(--accent-color)]/80 hover:bg-stone-400/50 dark:hover:bg-slate-800/90';
+
+  return (
+    <div
+      className={`relative w-full p-8 text-center border-2 border-dashed rounded-lg cursor-pointer transition-all duration-300 ${dragClasses}`}
+      style={{ borderColor: isDragging ? 'var(--accent-color)' : '' }}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+      onClick={handleClick}
+      aria-label="File upload area"
+    >
+      <input
+        ref={inputRef}
+        type="file"
+        multiple
+        accept={acceptedTypes.join(',')}
+        onChange={handleFileSelect}
+        className="hidden"
+        // @ts-ignore
+        webkitdirectory=""
+        mozdirectory=""
+      />
+      <div className="flex flex-col items-center justify-center text-stone-600 dark:text-slate-400 pointer-events-none">
+        <UploadIcon className="h-12 w-12 mb-4 text-stone-500 dark:text-slate-500 transition-colors" style={{ color: isDragging ? 'var(--accent-color)' : '' }} />
+        <p className="text-lg font-semibold text-stone-700 dark:text-slate-300">
+          將您的專案資料夾或檔案拖放到此處
+        </p>
+        <p className="mt-1">或 <span className="font-bold text-[var(--accent-color)]">點擊瀏覽</span></p>
+        <p className="text-xs text-stone-500 dark:text-slate-500 mt-2">（提示：支援上傳 .zip 壓縮檔、單一資料夾或多個檔案。）</p>
+      </div>
+    </div>
+  );
+};
