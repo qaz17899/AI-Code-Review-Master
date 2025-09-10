@@ -25,7 +25,7 @@ export interface ModeUI {
     subTitle: string;
     placeholder: string;
     buttonText: string;
-    loadingMessages: string[];
+    loadingMessages?: string[];
 }
 
 export interface ModeConfig {
@@ -52,8 +52,7 @@ export const MODES: Record<ReviewMode, ModeConfig> = {
             mainTitle: 'AI 程式碼審查大師',
             subTitle: '您的個人資深程式碼審查專家',
             placeholder: '例如：請專注於檢查 auth.py 中的安全性問題，或貼上圖片...',
-            buttonText: '開始審查',
-            loadingMessages: ['分析語法樹...', '檢查設計模式應用...', '評估演算法複雜度...', '尋找潛在的記憶體洩漏...', '審查錯誤處理機制...', '驗證程式碼風格一致性...', '比對最佳實踐...', '正在模擬執行路徑...']
+            buttonText: '開始審查'
         }
     },
     REFACTOR: {

@@ -45,7 +45,7 @@ Example Response:
 }
 `;
 
-export const DEEP_DIVE_MESSAGES = [
+export const DEFAULT_LOADING_MESSAGES = [
   '分析語法樹...',
   '檢查設計模式應用...',
   '評估演算法複雜度...',

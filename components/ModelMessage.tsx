@@ -3,9 +3,10 @@ import { SafeMarkdown } from './SafeMarkdown';
 import { CodeBlock } from './CodeBlock';
 import { CopyIcon, CheckIcon, MasterIcon, DownloadIcon, SpinnerIcon } from './icons';
 import { AnimatedMessage } from './AnimatedMessage';
-import { DEEP_DIVE_MESSAGES } from './constants';
+import { DEFAULT_LOADING_MESSAGES } from './constants';
+import { zipAndDownloadFiles } from '../utils';
 import { parseDiffs, applyPatch } from '../utils/patch';
-import type { ChatMessage } from '../types';
+import type { AppFile, ChatMessage } from '../types';
 
 declare global {
     interface Window {
@@ -37,31 +38,25 @@ export const ModelMessage: React.FC<{
         
         setIsProcessingDownload(true);
         try {
-            const zip = new window.JSZip();
             const originalFilesMap = new Map(previousUserMessage.files.map(f => [f.path, f.content]));
+            const patchedFiles: AppFile[] = [];
 
-            let patchedFileCount = 0;
             for (const diff of diffs) {
                 const originalContent = originalFilesMap.get(diff.filename);
                 if (originalContent) {
                     const newContent = applyPatch(originalContent, diff.patch);
-                    zip.file(diff.filename, newContent);
-                    patchedFileCount++;
+                    patchedFiles.push({
+                        name: diff.filename.split('/').pop() || diff.filename,
+                        path: diff.filename,
+                        content: newContent
+                    });
                 } else {
                     console.warn(`Original file not found for patch: ${diff.filename}`);
                 }
             }
 
-            if (patchedFileCount > 0) {
-                const blob = await zip.generateAsync({ type: 'blob' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'ai-patched-files.zip';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
+            if (patchedFiles.length > 0) {
+                await zipAndDownloadFiles(patchedFiles, 'ai-patched-files.zip');
             } else {
                 console.error("No files could be patched because original files were not found.");
             }
@@ -114,7 +109,7 @@ export const ModelMessage: React.FC<{
                 <MasterIcon className="h-6 w-6 text-[var(--accent-color)] animate-spin-slow flex-shrink-0" style={{ animationDuration: '3s' }}/>
                 <div className="flex-1 min-w-0">
                     <AnimatedMessage 
-                        messages={DEEP_DIVE_MESSAGES} 
+                        messages={DEFAULT_LOADING_MESSAGES} 
                         className="text-base font-medium bg-clip-text text-transparent bg-gradient-to-r from-stone-600 via-stone-400 to-stone-600 dark:from-slate-300 dark:via-slate-500 dark:to-slate-300 bg-[length:200%_auto] animate-text-shimmer"
                     />
                 </div>

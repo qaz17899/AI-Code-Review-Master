@@ -1,12 +1,12 @@
 import React from 'react';
 import type { AppFile, ReviewMode } from '../types';
 import { MasterIcon } from './icons';
-import { DEEP_DIVE_MESSAGES } from './constants';
+import { DEFAULT_LOADING_MESSAGES } from './constants';
 import { AnimatedMessage } from './AnimatedMessage';
 import { MODES } from '../config/modes';
 
 export const LoadingDisplay: React.FC<{ files: AppFile[], mode: ReviewMode }> = ({ files, mode }) => {
-  const messages = MODES[mode]?.ui.loadingMessages || DEEP_DIVE_MESSAGES;
+  const messages = MODES[mode]?.ui.loadingMessages || DEFAULT_LOADING_MESSAGES;
 
   return (
     <main className="w-full h-full flex flex-col items-center justify-center text-center p-4 animate-fade-in bg-transparent">
