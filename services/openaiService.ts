@@ -1,4 +1,5 @@
 import type { ChatMessage, AppFile, ApiSettings } from '../types';
+import { handleSseStream } from '../utils';
 
 interface OpenAIMessage {
     role: 'system' | 'user' | 'assistant';
@@ -110,37 +111,14 @@ export async function* generateOpenAIChatStream(
             throw new Error(`OpenAI API request failed: ${response.statusText} - ${errorBody}`);
         }
 
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
+        // Use the generic SSE stream handler
+        const parser = (jsonStr: string) => {
+            const parsed = JSON.parse(jsonStr);
+            return parsed.choices?.[0]?.delta?.content;
+        };
 
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            buffer += decoder.decode(value, { stream: true });
-            
-            const lines = buffer.split('\n');
-            buffer = lines.pop() || ''; // Keep the last, possibly incomplete, line
-
-            for (const line of lines) {
-                if (line.startsWith('data: ')) {
-                    const jsonStr = line.substring(6);
-                    if (jsonStr.trim() === '[DONE]') {
-                        return;
-                    }
-                    try {
-                        const parsed = JSON.parse(jsonStr);
-                        const delta = parsed.choices?.[0]?.delta?.content;
-                        if (delta) {
-                            yield delta;
-                        }
-                    } catch (e) {
-                        console.error("Failed to parse OpenAI SSE chunk:", e, "Chunk:", jsonStr);
-                    }
-                }
-            }
-        }
+        yield* handleSseStream(response, parser);
+        
     } catch (error) {
         // If the fetch was aborted by our controller, it's not a real error.
         // We just let the generator finish silently.

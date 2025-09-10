@@ -199,3 +199,52 @@ export const processUploadedFiles = async (
 
     return Promise.all(filteredPayloads.map(readFile));
 };
+
+/**
+ * A generic utility to handle Server-Sent Events (SSE) streams from a fetch Response.
+ * @param response The fetch Response object.
+ * @param parser A function to parse a JSON string from the stream and extract the text content.
+ * @returns An async generator that yields string chunks.
+ */
+export async function* handleSseStream(
+    response: Response,
+    parser: (jsonStr: string) => string | null | undefined
+): AsyncGenerator<string> {
+    if (!response.body) {
+        throw new Error("Response body is null.");
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep the last, possibly incomplete, line
+
+        for (const line of lines) {
+            if (line.startsWith('data: ')) {
+                const jsonStr = line.substring(6).trim();
+                
+                // Handle OpenAI's [DONE] marker
+                if (jsonStr === '[DONE]') {
+                    return;
+                }
+
+                try {
+                    const text = parser(jsonStr);
+                    if (text) {
+                        yield text;
+                    }
+                } catch (e) {
+                    console.error("Failed to parse SSE chunk:", e, "Chunk:", jsonStr);
+                }
+            }
+        }
+    }
+}

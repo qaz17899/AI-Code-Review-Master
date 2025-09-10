@@ -3,6 +3,7 @@
 import { GoogleGenAI, GenerateContentResponse, Content, Part, Type } from "@google/genai";
 import type { AppFile, ApiSettings, ChatMessage } from '../types';
 import { SCOPING_PROMPT } from '../components/constants';
+import { handleSseStream } from '../utils';
 
 function getClient(settings: ApiSettings): GoogleGenAI {
     const apiKey = settings.geminiApiKey || process.env.GEMINI_API_KEY;
@@ -266,37 +267,17 @@ async function* generateGeminiChatStreamWithProxy(
             throw new Error(`Proxy request failed: ${response.statusText} - ${errorBody}`);
         }
 
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
+        // Use the generic SSE stream handler
+        const parser = (jsonStr: string) => {
+            const parsed = JSON.parse(jsonStr);
+            return parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
+        };
 
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            
-            buffer += decoder.decode(value, { stream: true });
-            
-            let boundary = buffer.indexOf('\n\n');
-            while (boundary !== -1) {
-                const chunk = buffer.substring(0, boundary);
-                buffer = buffer.substring(boundary + 2);
-                
-                if (chunk.startsWith('data: ')) {
-                    try {
-                        const jsonStr = chunk.substring(6);
-                        const parsed = JSON.parse(jsonStr);
-                        const text = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
-                        if (text) {
-                            yield text;
-                        }
-                    } catch (e) {
-                        console.error("Failed to parse SSE chunk:", e, "Chunk:", chunk);
-                    }
-                }
-                boundary = buffer.indexOf('\n\n');
-            }
-        }
-    } catch (error) { if (error.name !== 'AbortError') throw error; }
+        yield* handleSseStream(response, parser);
+
+    } catch (error) {
+        if (error.name !== 'AbortError') throw error;
+    }
 }
 
 

@@ -1,21 +1,13 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { UploadIcon } from './icons';
-import { getUploadPayloadFromFileEntry, getFilesFromDirectoryEntry } from '../utils';
-
-// Interface for the payload emitted by this component
-export interface UploadPayload {
-  file: File;
-  path: string;
-}
+import { getUploadPayloadFromFileEntry, getFilesFromDirectoryEntry, type UploadPayload } from '../utils';
 
 interface FileUploadProps {
   onFilesChange: (payloads: UploadPayload[]) => void;
   acceptedTypes?: string[];
 }
 
-const SUPPORTED_FILE_TYPES = [".py", ".yaml", ".yml"];
-
-export const FileUpload: React.FC<FileUploadProps> = ({ onFilesChange, acceptedTypes = SUPPORTED_FILE_TYPES }) => {
+export const FileUpload: React.FC<FileUploadProps> = ({ onFilesChange, acceptedTypes = [] }) => {
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
