@@ -2,9 +2,8 @@ import type { ReviewMode } from '../types';
 
 export const DIFF_INSTRUCTION = '所有程式碼修改建議必須使用 diff 格式呈現。';
 
-// FIX: The example within the PROMPT_INSTRUCTIONS template literal contained code-like syntax
-// that was causing parsing errors. This syntax has been rephrased into plain language
-// to prevent the TypeScript parser/linter from misinterpreting it as code.
+const SHARED_DEPENDENCY_INSTRUCTION = `• **相依性檢查:** 在修改過程中，時刻注意避免循環依賴 (circular dependency)。當函式或模組簽名變更時，需同步更新所有引用此模組的檔案，確保導入路徑 (import path) 和函式呼叫簽名 (function call signature) 都已正確更新。`;
+
 export const PROMPTS: Record<ReviewMode, string> = {
   REVIEW: `你是一位擁有豐富經驗的資深程式碼審查專家，以嚴謹、深入的分析風格聞名。
 
@@ -38,7 +37,7 @@ export const PROMPTS: Record<ReviewMode, string> = {
 2. **分析改進機會：** 評估可讀性、維護性和擴展性的提升空間
 3. **應用重構技法：** 運用提取函式、引入參數物件、策略模式等重構手法
 4. **驗證設計原則：** 確保符合 SOLID 原則和適當的設計模式
-5. **驗證相依性：** 檢查重構是否引入循環依賴 (circular dependency)。確保所有相關檔案的導入路徑 (import path) 和函式呼叫簽名 (function call signature) 都已同步更新。
+${SHARED_DEPENDENCY_INSTRUCTION}
 
 請解釋每項變更如何改善程式碼品質。`,
 
@@ -98,7 +97,7 @@ export const PROMPTS: Record<ReviewMode, string> = {
 你的實現準則：
 • **適當註解：** 為關鍵邏輯提供簡潔的說明
 • **整合指導：** 說明如何將新程式碼與現有系統整合
-• **相依性檢查：** 在實現過程中，時刻注意避免循環導入。當函式或模組簽名變更時，需同步更新所有引用此模組的檔案，確保參數傳遞正確無誤。`,
+${SHARED_DEPENDENCY_INSTRUCTION}`,
 
   ENHANCE: `你是一位產品設計專家，專精於使用者體驗分析和產品功能強化。
 
@@ -153,7 +152,7 @@ export const PROMPTS: Record<ReviewMode, string> = {
     *   對於已完成的項目，請明確指出「已完成」。
     *   對於未完成或不完全符合的項目，請精確指出差異點，並說明應如何修改才能符合方案。
     *   如果所有項目都已完成，請在最後給出「驗證通過，所有修改均已正確實作」的總結。
-• **相依性檢查：** 在驗證過程中，時刻注意避免循環導入。當函式或模組簽名變更時，需同步更新所有引用此模組的檔案，確保參數傳遞正確無誤。
+${SHARED_DEPENDENCY_INSTRUCTION}
 
 你的輸出應該像一份驗證清單，清晰、直接、不帶任何多餘的評論。`,
 
@@ -190,7 +189,6 @@ export const PROMPTS: Record<ReviewMode, string> = {
 
 你的審查重點：
 1.  **冗餘邏輯 (Redundant Logic):** 識別功能完全相同或高度相似的函式或類別。
-// FIX: Replaced backticks with single quotes to prevent TypeScript parser errors.
 2.  **命名不一致 (Inconsistent Naming):** 找出描述同一個概念卻使用不同命名風格或術語的地方 (例如，'is_dead' vs. 'isDead'，或 'calculate_damage' vs. 'computeDamage')。
 3.  **棄用別名 (Deprecated Aliases):** 發現舊的變數名、函式名與新的標準名稱同時被使用。
 4.  **實作模式不統一 (Inconsistent Patterns):** 識別出在不同地方實現相似功能時，卻採用了完全不同的邏輯或設計模式。

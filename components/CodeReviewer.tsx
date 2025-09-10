@@ -47,7 +47,6 @@ export const CodeReviewer: React.FC = () => {
 
   const isSubmitting = submittingConversationId !== null;
   const onUpdateConversation = (conversation: Conversation) => {
-    // FIX: Corrected typo in action type from 'UPDATE_CONVERSION' to 'UPDATE_CONVERSATION'.
     dispatch({ type: 'UPDATE_CONVERSATION', payload: { conversation } });
   }
 
@@ -145,7 +144,6 @@ export const CodeReviewer: React.FC = () => {
             
             // Efficiently update only the last message for streaming UI updates.
             // This avoids deep copying the entire history on every chunk.
-            // FIX: Explicitly type the new message object to prevent TypeScript from widening the `role` property to a generic `string`, which would cause a type mismatch in the conversation history.
             const streamingModelMessage: ChatMessage = { role: 'model', content: finalContent };
             const streamingHistory = [...previousHistory, streamingModelMessage];
             const conversationUpdate: Conversation = {
@@ -190,8 +188,6 @@ export const CodeReviewer: React.FC = () => {
     }, [onUpdateConversation, provider, settings]);
 
   const handleSubmit = async (isFollowUp: boolean, followUpPayload?: { files: AppFile[], message: string, images: string[] }) => {
-    if (!conversation) return;
-
     const filesToSubmit = isFollowUp ? followUpPayload!.files : files.filter(f => selectedFilePaths.has(f.path));
     const messageToSend = isFollowUp ? followUpPayload!.message : userMessage;
     const imagesToSend = isFollowUp ? followUpPayload!.images : pastedImages;
@@ -200,44 +196,64 @@ export const CodeReviewer: React.FC = () => {
       setError("請至少選擇一個檔案或貼上一張圖片進行審查。");
       return;
     }
+    
+    const historyForAPI = isFollowUp ? [...conversation!.history] : [];
+    const userMessagePayload: ChatMessage = { role: 'user', content: messageToSend, files: filesToSubmit, images: imagesToSend };
+    const modelMessagePayload: ChatMessage = { role: 'model', content: '' };
+    const updatedHistory = [...conversation!.history, userMessagePayload, modelMessagePayload];
+    
+    let updatedConversation: Conversation = { ...conversation!, history: updatedHistory };
+
+    if (!isFollowUp) {
+      if (conversation!.title === '新的對話' && messageToSend.trim()) {
+          const newTitle = messageToSend.trim().substring(0, 40) + (messageToSend.trim().length > 40 ? '...' : '');
+          updatedConversation.title = newTitle;
+          dispatch({ type: 'RENAME_CONVERSATION', payload: { id: conversation!.id, title: newTitle } });
+      } else if (conversation!.title === '新的對話' && filesToSubmit.length > 0) {
+          const newTitle = `Review: ${filesToSubmit[0].name}`;
+          updatedConversation.title = newTitle;
+          dispatch({ type: 'RENAME_CONVERSATION', payload: { id: conversation!.id, title: newTitle } });
+      }
+    }
+    onUpdateConversation(updatedConversation);
+
+    await executeChatGeneration(
+      historyForAPI,
+      filesToSubmit,
+      messageToSend,
+      imagesToSend,
+      updatedConversation
+    );
+  };
+
+  const executeChatGeneration = async (
+    historyForAPI: ChatMessage[],
+    filesToSubmit: AppFile[],
+    messageToSend: string,
+    imagesToSend: string[],
+    conversationForStreaming: Conversation
+  ) => {
+    if (!conversation) return;
+
+    // If another request is running for another conversation, do not start
+    if (isSubmitting && submittingConversationId !== conversation.id) {
+        console.warn("Another submission is already in progress for a different conversation.");
+        // Revert optimistic UI update if we don't proceed
+        onUpdateConversation({ ...conversationForStreaming, history: historyForAPI });
+        return;
+    }
 
     abortControllerRef.current = new AbortController();
     setSubmittingConversationId(conversation.id);
     setError('');
 
-    const userMessagePayload: ChatMessage = { role: 'user', content: messageToSend, files: filesToSubmit, images: imagesToSend };
-    const modelMessagePayload: ChatMessage = { role: 'model', content: '' };
-
-    const historyForAPI = isFollowUp ? [...conversation.history] : [];
-    const updatedHistory = [...conversation.history, userMessagePayload, modelMessagePayload];
-    
-    let updatedConversation: Conversation = { ...conversation, history: updatedHistory };
-
-    if (!isFollowUp) {
-      if (conversation.title === '新的對話' && messageToSend.trim()) {
-          const newTitle = messageToSend.trim().substring(0, 40) + (messageToSend.trim().length > 40 ? '...' : '');
-          updatedConversation.title = newTitle;
-          // FIX: Corrected typo in action type from 'RENAME_CONVERSION' to 'RENAME_CONVERSATION'.
-          dispatch({ type: 'RENAME_CONVERSATION', payload: { id: conversation.id, title: newTitle } });
-      } else if (conversation.title === '新的對話' && filesToSubmit.length > 0) {
-          const newTitle = `Review: ${filesToSubmit[0].name}`;
-          updatedConversation.title = newTitle;
-          // FIX: Corrected typo in action type from 'RENAME_CONVERSION' to 'RENAME_CONVERSATION'.
-          dispatch({ type: 'RENAME_CONVERSATION', payload: { id: conversation.id, title: newTitle } });
-      }
-    }
-    onUpdateConversation(updatedConversation);
-    
     const startTime = performance.now();
     try {
         const masterPromptTemplate = PROMPTS[mode];
-        const masterPrompt = settings.forceDiff
-            ? `${masterPromptTemplate}\n\n${DIFF_INSTRUCTION}`
-            : masterPromptTemplate;
-        
+        const masterPrompt = settings.forceDiff ? `${masterPromptTemplate}\n\n${DIFF_INSTRUCTION}` : masterPromptTemplate;
         const promptTokenCount = await countInputTokens(provider, filesToSubmit, messageToSend, imagesToSend, settings);
-
         const signal = abortControllerRef.current.signal;
+
         const stream = await generateChatStream({
             provider,
             history: historyForAPI,
@@ -249,22 +265,22 @@ export const CodeReviewer: React.FC = () => {
             settings
         });
         
-        await handleStreamingResponse(stream, updatedConversation, promptTokenCount, startTime);
+        await handleStreamingResponse(stream, conversationForStreaming, promptTokenCount, startTime);
 
     } catch (err) {
         console.error("Error during chat generation:", err);
         const errorMessage = err instanceof Error ? err.message : '與 AI 通訊時發生錯誤';
         if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
             setError(errorMessage);
-            const currentHistory = [...updatedConversation.history];
+            const currentHistory = [...conversationForStreaming.history];
             currentHistory[currentHistory.length - 1] = { role: 'model', content: `發生錯誤: ${errorMessage}` };
-            onUpdateConversation({ ...updatedConversation, history: currentHistory });
+            onUpdateConversation({ ...conversationForStreaming, history: currentHistory });
         }
     } finally {
        abortControllerRef.current = null;
        setSubmittingConversationId(null);
     }
-  };
+  }
 
   const onFollowUp = async (followUpFiles: AppFile[], message: string, images: string[]) => {
     await handleSubmit(true, { files: followUpFiles, message, images });
@@ -333,53 +349,20 @@ export const CodeReviewer: React.FC = () => {
     const messageToSend = message;
     const imagesToSend = images || [];
 
-    abortControllerRef.current = new AbortController();
-    setSubmittingConversationId(conversation.id);
-    setError('');
-
     // The new UI state will have the history up to the last user message, plus a new placeholder for the model.
     // This effectively replaces any model messages that might have come after it.
     const modelMessagePayload: ChatMessage = { role: 'model', content: '' };
     const updatedHistory = [...conversation.history.slice(0, lastUserMessageIndex + 1), modelMessagePayload];
     const updatedConversation: Conversation = { ...conversation, history: updatedHistory };
     onUpdateConversation(updatedConversation);
-      
-      const startTime = performance.now();
-      try {
-          const masterPromptTemplate = PROMPTS[mode];
-          const masterPrompt = settings.forceDiff
-              ? `${masterPromptTemplate}\n\n${DIFF_INSTRUCTION}`
-              : masterPromptTemplate;
 
-          const promptTokenCount = await countInputTokens(provider, filesToSubmit, messageToSend, imagesToSend, settings);
-          const signal = abortControllerRef.current.signal;
-
-          const stream = await generateChatStream({
-              provider,
-              history: historyForAPI, // Pass the history *before* the final user prompt
-              files: filesToSubmit,
-              signal,
-              userMessage: messageToSend,
-              images: imagesToSend,
-              masterPrompt,
-              settings
-          });
-          
-          await handleStreamingResponse(stream, updatedConversation, promptTokenCount, startTime);
-
-      } catch (err) {
-          console.error("Error during chat regeneration:", err);
-          const errorMessage = err instanceof Error ? err.message : '與 AI 通訊時發生錯誤';
-          if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
-              setError(errorMessage);
-              const currentHistory = [...updatedConversation.history];
-              currentHistory[currentHistory.length - 1] = { role: 'model', content: `發生錯誤: ${errorMessage}` };
-              onUpdateConversation({ ...updatedConversation, history: currentHistory });
-          }
-      } finally {
-          abortControllerRef.current = null;
-          setSubmittingConversationId(null);
-      }
+    await executeChatGeneration(
+        historyForAPI,
+        filesToSubmit,
+        messageToSend,
+        imagesToSend,
+        updatedConversation
+    );
   }, [conversation, provider, mode, settings, onUpdateConversation, handleStreamingResponse]);
   
     const handleAiScoping = async () => {
@@ -472,8 +455,6 @@ export const CodeReviewer: React.FC = () => {
             recommendedPaths={recommendedPaths}
             setRecommendedPaths={setRecommendedPaths}
             isScoping={isScoping}
-            setIsScoping={setIsScoping}
-            // FIX: Pass the `handleAiScoping` handler instead of the undefined `onAiScoping`.
             onAiScoping={handleAiScoping}
             userMessage={userMessage}
             setError={setError}

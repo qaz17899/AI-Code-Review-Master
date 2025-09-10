@@ -16,13 +16,13 @@ interface FileManagementAreaProps {
     setAcceptedTypes: React.Dispatch<React.SetStateAction<string[]>>;
     selectedFilePaths: Set<string>;
     setSelectedFilePaths: React.Dispatch<React.SetStateAction<Set<string>>>;
-    recommendedPaths: Set<string>;
-    setRecommendedPaths: React.Dispatch<React.SetStateAction<Set<string>>>;
-    isScoping: boolean;
-    setIsScoping: React.Dispatch<React.SetStateAction<boolean>>;
-    onAiScoping: () => Promise<void>;
     userMessage: string;
     setError: React.Dispatch<React.SetStateAction<string>>;
+    // AI Scoping props are optional for reusability
+    recommendedPaths?: Set<string>;
+    setRecommendedPaths?: React.Dispatch<React.SetStateAction<Set<string>>>;
+    isScoping?: boolean;
+    onAiScoping?: () => Promise<void>;
 }
 
 export const FileManagementArea: React.FC<FileManagementAreaProps> = (props) => {
@@ -212,17 +212,19 @@ export const FileManagementArea: React.FC<FileManagementAreaProps> = (props) => 
                                     </div>
                                     <span>{selectedFilePaths.size} / {files.length} 已選擇</span>
                                 </button>
-                                <button onClick={onAiScoping} disabled={files.length === 0} className="flex items-center gap-1.5 text-xs text-[var(--accent-color)] font-semibold hover:brightness-125 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
-                                    <StarIcon className="h-4 w-4" />
-                                    <span>為 AI 推薦檔案</span>
-                                </button>
+                                {onAiScoping && (
+                                    <button onClick={onAiScoping} disabled={files.length === 0} className="flex items-center gap-1.5 text-xs text-[var(--accent-color)] font-semibold hover:brightness-125 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                                        <StarIcon className="h-4 w-4" />
+                                        <span>為 AI 推薦檔案</span>
+                                    </button>
+                                )}
                             </div>
                             <FileTree 
                                 files={files}
                                 folderFileMap={folderFileMap}
                                 fileTree={fileTree}
                                 selectedFilePaths={selectedFilePaths}
-                                recommendedPaths={recommendedPaths}
+                                recommendedPaths={recommendedPaths ?? new Set()}
                                 expandedFolders={expandedFolders}
                                 fileFilter={fileFilter}
                                 onToggleFolder={handleToggleFolder}

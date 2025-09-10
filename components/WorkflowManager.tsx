@@ -36,7 +36,6 @@ export const WorkflowManager: React.FC = () => {
     const [currentProgress, setCurrentProgress] = useState({ cycle: 0, step: 0, mode: '' });
     const [finalFiles, setFinalFiles] = useState<AppFile[]>([]);
     const isAbortingRef = useRef(false);
-    // FIX: Add a ref for the AbortController to manage cancellation.
     const abortControllerRef = useRef<AbortController | null>(null);
 
     const logContainerRef = useRef<HTMLDivElement>(null);
@@ -93,7 +92,6 @@ export const WorkflowManager: React.FC = () => {
                         images: [],
                         masterPrompt,
                         settings,
-                        // FIX: Pass the AbortSignal required by generateChatStream.
                         signal: abortControllerRef.current.signal,
                     });
 
@@ -171,11 +169,14 @@ export const WorkflowManager: React.FC = () => {
             
             <div className="bg-stone-100/60 dark:bg-slate-900/60 backdrop-blur-xl border border-stone-300 dark:border-slate-800/50 rounded-xl p-4 sm:p-6 shadow-lg">
                  <FileManagementArea
-                    files={files} setFiles={setFiles} acceptedTypes={acceptedTypes} setAcceptedTypes={setAcceptedTypes}
-                    selectedFilePaths={selectedFilePaths} setSelectedFilePaths={setSelectedFilePaths}
-                    recommendedPaths={new Set()} setRecommendedPaths={() => {}}
-                    isScoping={false} setIsScoping={() => {}} onAiScoping={() => Promise.resolve()}
-                    userMessage="" setError={setConfigError}
+                    files={files}
+                    setFiles={setFiles}
+                    acceptedTypes={acceptedTypes}
+                    setAcceptedTypes={setAcceptedTypes}
+                    selectedFilePaths={selectedFilePaths}
+                    setSelectedFilePaths={setSelectedFilePaths}
+                    userMessage=""
+                    setError={setConfigError}
                 />
             </div>
 
