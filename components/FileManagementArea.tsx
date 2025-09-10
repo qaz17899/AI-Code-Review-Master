@@ -126,11 +126,18 @@ export const FileManagementArea: React.FC<FileManagementAreaProps> = (props) => 
         });
     };
   
-    const handleToggleSelectAll = () => {
-        const visibleFilePaths = (fileFilter.trim() ? files.filter(f => f.path.toLowerCase().includes(fileFilter.trim().toLowerCase())) : files).map(f => f.path);
-        const allVisibleCurrentlySelected = visibleFilePaths.length > 0 && visibleFilePaths.every(p => selectedFilePaths.has(p));
+    const visibleFiles = useMemo(() => {
+        if (!fileFilter.trim()) return files;
+        return files.filter(f => f.path.toLowerCase().includes(fileFilter.trim().toLowerCase()));
+    }, [files, fileFilter]);
 
-        if (allVisibleCurrentlySelected) {
+    const allVisibleSelected = useMemo(() => 
+        visibleFiles.length > 0 && visibleFiles.every(f => selectedFilePaths.has(f.path)),
+    [visibleFiles, selectedFilePaths]);
+
+    const handleToggleSelectAll = () => {
+        const visibleFilePaths = visibleFiles.map(f => f.path);
+        if (allVisibleSelected) {
             setSelectedFilePaths(prev => {
                 const newSet = new Set(prev);
                 visibleFilePaths.forEach(path => newSet.delete(path));
@@ -156,13 +163,6 @@ export const FileManagementArea: React.FC<FileManagementAreaProps> = (props) => 
             return newSet;
         });
     };
-    
-    const visibleFiles = useMemo(() => {
-        if (!fileFilter.trim()) return files;
-        return files.filter(f => f.path.toLowerCase().includes(fileFilter.trim().toLowerCase()));
-    }, [files, fileFilter]);
-
-    const allVisibleSelected = visibleFiles.length > 0 && visibleFiles.every(f => selectedFilePaths.has(f.path));
 
     return (
         <div className="relative">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, FormEvent } from 'react';
+import React, { useState, useEffect, useRef, useMemo, FormEvent, useCallback } from 'react';
 import type { Conversation } from '../types';
 import { PlusIcon, MessageSquareIcon, TrashIcon, EditIcon, SearchIcon, XIcon, ChevronDownIcon, FolderIcon } from './icons';
 import { useConversation } from '../contexts/ConversationContext';
@@ -61,43 +61,43 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
         }
     }, [isWorkspaceOpen]);
 
-    const handleRename = (id: string) => {
+    const handleRename = useCallback((id: string) => {
         if (editText.trim()) {
             dispatch({ type: 'RENAME_CONVERSATION', payload: { id, title: editText } });
         }
         setEditingId(null);
         setEditText('');
-    };
+    }, [dispatch, editText]);
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, id: string) => {
+    const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>, id: string) => {
         if (e.key === 'Enter') {
             handleRename(id);
         } else if (e.key === 'Escape') {
             setEditingId(null);
             setEditText('');
         }
-    };
+    }, [handleRename]);
     
-    const startEditing = (e: React.MouseEvent, conv: Conversation) => {
+    const startEditing = useCallback((e: React.MouseEvent, conv: Conversation) => {
         e.stopPropagation();
         setEditingId(conv.id);
         setEditText(conv.title);
-    };
+    }, []);
     
-    const handleDelete = (e: React.MouseEvent, id: string) => {
+    const handleDelete = useCallback((e: React.MouseEvent, id: string) => {
         e.stopPropagation();
         dispatch({ type: 'DELETE_CONVERSATION', payload: { id } });
-    }
+    }, [dispatch]);
     
-    const handleNew = () => {
+    const handleNew = useCallback(() => {
         dispatch({ type: 'NEW_CONVERSATION', payload: { provider: settings.defaultProvider } });
-    }
+    }, [dispatch, settings.defaultProvider]);
     
-    const handleSelect = (id: string) => {
+    const handleSelect = useCallback((id: string) => {
         dispatch({ type: 'SELECT_CONVERSATION', payload: { id } });
-    }
+    }, [dispatch]);
 
-    const handleAddWorkspace = (e: FormEvent) => {
+    const handleAddWorkspace = useCallback((e: FormEvent) => {
         e.preventDefault();
         if (newWorkspaceName.trim()) {
             dispatch({ type: 'NEW_WORKSPACE', payload: { name: newWorkspaceName.trim() } });
@@ -105,7 +105,7 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
             setIsAddingWorkspace(false);
             setIsWorkspaceOpen(false); // Close after adding
         }
-    };
+    }, [dispatch, newWorkspaceName]);
 
     const conversationsForCurrentWorkspace = useMemo(() => {
         return conversations
