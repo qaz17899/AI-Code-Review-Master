@@ -32,15 +32,20 @@ const workerScript = `
 `;
 
 
+// --- OPTIMIZATION: Create Blob and URL once at the module level ---
+// This avoids recreating the Blob and URL for every instance of CodeBlock,
+// reducing memory usage and component mount time.
+const workerBlob = new Blob([workerScript], { type: 'application/javascript' });
+const workerUrl = URL.createObjectURL(workerBlob);
+
 export const CodeBlock: React.FC<{ code: string, lang: string, isStreaming: boolean }> = ({ code, lang, isStreaming }) => {
     const codeRef = useRef<HTMLElement>(null);
     const [highlightedCode, setHighlightedCode] = useState<string | null>(null);
     const workerRef = useRef<Worker | null>(null);
+    const highlightingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Setup web worker for syntax highlighting
     useEffect(() => {
-        const blob = new Blob([workerScript], { type: 'application/javascript' });
-        const workerUrl = URL.createObjectURL(blob);
         const newWorker = new Worker(workerUrl);
         workerRef.current = newWorker;
 
@@ -50,33 +55,45 @@ export const CodeBlock: React.FC<{ code: string, lang: string, isStreaming: bool
 
         return () => {
             newWorker.terminate();
-            URL.revokeObjectURL(workerUrl);
         };
     }, []);
 
     // Effect to handle code changes and trigger highlighting
     useEffect(() => {
-        if (codeRef.current) {
-            // During streaming, display raw text for performance.
-            if (isStreaming) {
-                setHighlightedCode(null); // Clear previous highlighted content
-                codeRef.current.textContent = code;
-            } else {
-                // When streaming finishes, send the code to the worker for highlighting.
-                // Immediately update to final raw text content.
-                setHighlightedCode(null);
-                codeRef.current.textContent = code; 
+        if (!codeRef.current || !workerRef.current) return;
+
+        // Always display raw text immediately for responsiveness
+        codeRef.current.textContent = code;
+        setHighlightedCode(null);
+
+        // Clear any previous scheduled highlighting
+        if (highlightingTimer.current) {
+            clearTimeout(highlightingTimer.current);
+        }
+
+        // When streaming is done, highlight immediately. Otherwise, use a short debounce.
+        // A shorter delay (e.g., 100ms) provides a more "real-time" feel.
+        const delay = isStreaming ? 100 : 0;
+
+        highlightingTimer.current = setTimeout(() => {
+            if (code) { // Only highlight if there's content
                 workerRef.current?.postMessage({ code, lang });
             }
-        }
+        }, delay);
+
+        return () => {
+            if (highlightingTimer.current) {
+                clearTimeout(highlightingTimer.current);
+            }
+        };
     }, [code, lang, isStreaming]);
 
     // Effect to apply the highlighted HTML when it's ready from the worker
     useEffect(() => {
-        if (codeRef.current && highlightedCode && !isStreaming) {
+        if (codeRef.current && highlightedCode) {
             codeRef.current.innerHTML = highlightedCode;
         }
-    }, [highlightedCode, isStreaming]);
+    }, [highlightedCode]);
 
 
     return (

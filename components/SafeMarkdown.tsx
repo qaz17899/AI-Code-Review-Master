@@ -17,11 +17,6 @@ const parseInline = (text: string): React.ReactNode[] => {
 };
 
 const MemoizedSafeMarkdown: React.FC<{ text: string; isStreaming: boolean; }> = ({ text, isStreaming }) => {
-    // During streaming, render raw text to avoid expensive parsing on every chunk.
-    if (isStreaming) {
-        return <div className="my-2 text-stone-700 dark:text-slate-300 leading-loose whitespace-pre-wrap">{text}</div>;
-    }
-
     const elements = React.useMemo(() => {
         if (!text) return [];
         const lines = text.split('\n');
@@ -64,7 +59,10 @@ const MemoizedSafeMarkdown: React.FC<{ text: string; isStreaming: boolean; }> = 
             const key = `${keyPrefix}-${index}`;
             const trimmedLine = line.trim();
 
-            if (trimmedLine.startsWith('## ')) {
+            if (trimmedLine.startsWith('# ')) {
+                flushAll();
+                elements.push(<h1 key={key} className="text-3xl font-bold mt-8 mb-4 text-stone-950 dark:text-slate-50 border-b-2 border-stone-300 dark:border-slate-700 pb-2">{parseInline(trimmedLine.substring(2))}</h1>);
+            } else if (trimmedLine.startsWith('## ')) {
                 flushAll();
                 elements.push(<h2 key={key} className="text-2xl font-bold mt-6 mb-3 text-stone-900 dark:text-slate-100 border-b-2 border-transparent pb-2 [border-image:linear-gradient(to_right,var(--accent-color),transparent)_1]">{parseInline(trimmedLine.substring(3))}</h2>);
             } else if (trimmedLine.startsWith('### ')) {
@@ -73,6 +71,12 @@ const MemoizedSafeMarkdown: React.FC<{ text: string; isStreaming: boolean; }> = 
             } else if (trimmedLine.startsWith('#### ')) {
                 flushAll();
                 elements.push(<h4 key={key} className="text-lg font-bold mt-3 mb-1 text-stone-800 dark:text-slate-300">{parseInline(trimmedLine.substring(5))}</h4>);
+            } else if (trimmedLine.startsWith('##### ')) {
+                flushAll();
+                elements.push(<h5 key={key} className="text-base font-bold mt-2 mb-1 text-stone-800 dark:text-slate-300">{parseInline(trimmedLine.substring(6))}</h5>);
+            } else if (trimmedLine.startsWith('###### ')) {
+                flushAll();
+                elements.push(<h6 key={key} className="text-sm font-bold mt-2 mb-1 text-stone-700 dark:text-slate-400">{parseInline(trimmedLine.substring(7))}</h6>);
             } else if (trimmedLine.startsWith('* ')) {
                 flushParagraph();
                 currentListItems.push(<li key={key} className="text-stone-700 dark:text-slate-300">{parseInline(trimmedLine.substring(2))}</li>);

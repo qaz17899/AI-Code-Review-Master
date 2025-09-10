@@ -2,9 +2,9 @@ import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { ResultDisplay } from './ResultDisplay';
 import { generateChatStream, countInputTokens, countResponseTokens } from '../services/aiService';
 import { scopeRelevantFiles } from '../services/geminiService';
-import { DIFF_INSTRUCTION, ALL_SUPPORTED_TYPES } from './constants';
+import { DIFF_INSTRUCTION, ALL_SUPPORTED_TYPES, WORKFLOW_MODES } from './constants';
 import type { ReviewMode, ChatMessage, AppFile, Conversation } from '../types';
-import { StarIcon } from './icons';
+import { StarIcon, TrashIcon } from './icons';
 import { useConversation } from '../contexts/ConversationContext';
 import { ModeSelectorGrid } from './ModeSelectorGrid';
 import { FileManagementArea } from './FileManagementArea';
@@ -15,6 +15,7 @@ import { MODES } from '../config/modes';
 import { ModeExampleModal } from './ModeExampleModal';
 import { WorkflowManager } from './WorkflowManager';
 import { useDebouncedTokenCounter } from '../hooks/useDebouncedTokenCounter';
+import { getModeIcon } from './ModeIcons';
 
 
 export const CodeReviewer: React.FC = () => {
@@ -27,7 +28,17 @@ export const CodeReviewer: React.FC = () => {
   
   const [userMessage, setUserMessage] = useState('');
   const [pastedImages, setPastedImages] = useState<string[]>([]);
-  const [acceptedTypes, setAcceptedTypes] = useState<string[]>(ALL_SUPPORTED_TYPES);
+  
+  // Workflow-related state, now managed here
+  const [isWorkflowView, setIsWorkflowView] = useState(false); // Controls switch to execution view
+  const [sequence, setSequence] = useState<ReviewMode[]>(['CONSOLIDATE', 'REFACTOR']);
+  const [cycles, setCycles] = useState(1);
+  const dragItem = useRef<number | null>(null);
+
+  const [acceptedTypes, setAcceptedTypes] = useState<string[]>(() => {
+      const currentMode = activeConversation?.mode || 'REVIEW';
+      return currentMode === 'WORKFLOW' ? ALL_SUPPORTED_TYPES.filter(t => t !== '.zip') : ALL_SUPPORTED_TYPES;
+  });
   
   const [selectedFilePaths, setSelectedFilePaths] = useState<Set<string>>(new Set());
   const [recommendedPaths, setRecommendedPaths] = useState<Set<string>>(new Set());
@@ -52,21 +63,23 @@ export const CodeReviewer: React.FC = () => {
   }
 
   useEffect(() => {
-    // If the conversation has changed (i.e., different ID)
     if (prevConversationIdRef.current !== conversation?.id) {
-      // And the new conversation is empty (no history)
       if (conversation?.history.length === 0) {
-        // Then reset the form state
         setFiles([]);
         setError('');
         setUserMessage('');
         setPastedImages([]);
+        setIsWorkflowView(false);
+        setSequence(['CONSOLIDATE', 'REFACTOR']);
+        setCycles(1);
         setSelectedFilePaths(new Set());
         setRecommendedPaths(new Set());
       }
-      // Update the ref to track the current conversation ID for the next run
       prevConversationIdRef.current = conversation?.id;
     }
+    const newMode = conversation?.mode || 'REVIEW';
+    setAcceptedTypes(newMode === 'WORKFLOW' ? ALL_SUPPORTED_TYPES.filter(t => t !== '.zip') : ALL_SUPPORTED_TYPES);
+
   }, [conversation]);
   
   // Effect to filter files when accepted types change
@@ -102,8 +115,9 @@ export const CodeReviewer: React.FC = () => {
         promptTokenCount: number,
         startTime: number
     ) => {
-        // The conversation history from the previous turn. This is a stable reference.
-        const previousHistory = initialConversation.history.slice(0, -1);
+        // Create the new history array ONCE, with a placeholder for the model's message.
+        const streamingHistory = [...initialConversation.history.slice(0, -1), { role: 'model' as const, content: '' }];
+        const conversationUpdateTemplate = { ...initialConversation, history: streamingHistory };
     
         let finalContent = '';
         for await (const chunk of stream) {
@@ -114,15 +128,10 @@ export const CodeReviewer: React.FC = () => {
             }
             finalContent += chunk;
             
-            // Efficiently update only the last message for streaming UI updates.
-            // This avoids deep copying the entire history on every chunk.
-            const streamingModelMessage: ChatMessage = { role: 'model', content: finalContent };
-            const streamingHistory = [...previousHistory, streamingModelMessage];
-            const conversationUpdate: Conversation = {
-                ...initialConversation,
-                history: streamingHistory,
-            };
-            onUpdateConversation(conversationUpdate);
+            // OPTIMIZED: Mutate the last message in place instead of creating a new array.
+            // This drastically reduces memory churn and GC pressure.
+            streamingHistory[streamingHistory.length - 1] = { role: 'model', content: finalContent };
+            onUpdateConversation(conversationUpdateTemplate);
         }
     
         const endTime = performance.now();
@@ -153,7 +162,7 @@ export const CodeReviewer: React.FC = () => {
         // Final update with all metadata.
         const finalConversation: Conversation = {
             ...initialConversation,
-            history: [...previousHistory, finalModelMessage],
+            history: [...streamingHistory.slice(0, -1), finalModelMessage],
         };
         onUpdateConversation(finalConversation);
     
@@ -258,13 +267,22 @@ export const CodeReviewer: React.FC = () => {
     await handleSubmit(true, { files: followUpFiles, message, images });
   };
   
-  const handleStartReview = () => {
+  const handlePrimaryAction = () => {
+    if (mode === 'WORKFLOW') {
+      const filesToProcess = files.filter(f => selectedFilePaths.has(f.path));
+      if (filesToProcess.length === 0 || sequence.length === 0) {
+        setError('請至少選擇一個檔案並在序列中加入一個模式。');
+        return;
+      }
+      setError('');
+      setIsWorkflowView(true);
+    } else {
       handleSubmit(false);
-  }
+    }
+  };
 
   const handleStopGeneration = useCallback(() => {
     abortControllerRef.current?.abort();
-    // 立即更新 UI 狀態，提供即時反饋
     setSubmittingConversationId(null);
   }, []);
 
@@ -278,7 +296,6 @@ export const CodeReviewer: React.FC = () => {
         setSubmittingConversationId(null);
     }
 
-    // Remove the message at the target index and all subsequent messages
     const updatedHistory = conversation.history.slice(0, indexToDelete);
 
     const updatedConversation: Conversation = {
@@ -286,7 +303,6 @@ export const CodeReviewer: React.FC = () => {
       history: updatedHistory,
     };
 
-    // If we deleted all turns, reset the conversation title to be like a new one.
     if (updatedHistory.length === 0) {
       updatedConversation.title = '新的對話';
     }
@@ -297,8 +313,6 @@ export const CodeReviewer: React.FC = () => {
   const handleRegenerate = useCallback(async () => {
     if (!conversation || conversation.history.length < 1) return;
 
-    // Find the last user message in the history for regeneration.
-    // Using a reverse loop for broader JavaScript environment compatibility instead of findLastIndex.
     let lastUserMessageIndex = -1
     for (let i = conversation.history.length - 1; i >= 0; i--) {
       if (conversation.history[i].role === 'user') {
@@ -307,13 +321,9 @@ export const CodeReviewer: React.FC = () => {
       }
     }
 
-    // If no user message exists, we can't regenerate.
     if (lastUserMessageIndex === -1) return;
 
     const lastUserMessage = conversation.history[lastUserMessageIndex];
-
-    // History for the API call should include everything UP TO the last user message.
-    // The user message itself will be the prompt.
     const historyForAPI = conversation.history.slice(0, lastUserMessageIndex);
     
     const { files, content: message, images } = lastUserMessage;
@@ -321,8 +331,6 @@ export const CodeReviewer: React.FC = () => {
     const messageToSend = message;
     const imagesToSend = images || [];
 
-    // The new UI state will have the history up to the last user message, plus a new placeholder for the model.
-    // This effectively replaces any model messages that might have come after it.
     const modelMessagePayload: ChatMessage = { role: 'model', content: '' };
     const updatedHistory = [...conversation.history.slice(0, lastUserMessageIndex + 1), modelMessagePayload];
     const updatedConversation: Conversation = { ...conversation, history: updatedHistory };
@@ -358,6 +366,26 @@ export const CodeReviewer: React.FC = () => {
           setIsScoping(false);
         }
     };
+    
+    const handleAddModeToSequence = (modeToAdd: ReviewMode) => {
+        setSequence(prev => [...prev, modeToAdd]);
+    };
+    const handleRemoveModeFromSequence = (index: number) => {
+        setSequence(prev => prev.filter((_, i) => i !== index));
+    };
+    const handleDragStart = (index: number) => { dragItem.current = index; };
+    const handleDragEnter = (index: number) => {
+        if (dragItem.current === null || dragItem.current === index) return;
+        setSequence(prev => {
+            const newSequence = [...prev];
+            const [draggedItem] = newSequence.splice(dragItem.current!, 1);
+            newSequence.splice(index, 0, draggedItem);
+            dragItem.current = index;
+            return newSequence;
+        });
+    };
+    const handleDragEnd = () => (dragItem.current = null);
+
 
   if (!conversation) {
     return (
@@ -389,7 +417,6 @@ export const CodeReviewer: React.FC = () => {
                 isSubmitting={isSubmitting}
                 onDeleteFromTurn={handleDeleteFromTurn}
                 onRegenerate={handleRegenerate}
-                // FIX: Pass `handleStopGeneration` to the `onStopGeneration` prop of `ResultDisplay` as `onStopGeneration` was not defined.
                 onStopGeneration={handleStopGeneration}
                 settings={settings}
                 acceptedTypes={acceptedTypes}
@@ -399,13 +426,16 @@ export const CodeReviewer: React.FC = () => {
     );
   }
   
-  // Special view for Workflow mode when starting a new conversation
-  if (mode === 'WORKFLOW') {
-      return (
-          <main className="flex-grow min-h-0 h-full overflow-y-auto custom-scrollbar">
-              <WorkflowManager />
-          </main>
-      )
+  if (isWorkflowView) {
+    return (
+        <main className="flex-grow min-h-0 h-full overflow-y-auto custom-scrollbar">
+            <WorkflowManager
+                initialFiles={files.filter(f => selectedFilePaths.has(f.path))}
+                sequence={sequence}
+                cycles={cycles}
+            />
+        </main>
+    );
   }
 
   const renderContent = () => (
@@ -435,20 +465,70 @@ export const CodeReviewer: React.FC = () => {
         />
       </div>
       
-      <div className="relative bg-stone-100/60 dark:bg-slate-900/60 backdrop-blur-xl border border-stone-300 dark:border-slate-800/50 rounded-xl p-4 sm:p-6 dark:ring-1 dark:ring-inset dark:ring-white/10 shadow-lg shadow-stone-200/50 dark:shadow-none transition-all duration-300 hover:border-[var(--accent-color)]/50 dark:hover:shadow-lg dark:hover:shadow-[var(--accent-color)]/10 dark:hover:-translate-y-px">
-        <PromptInputArea 
-          userMessage={userMessage}
-          setUserMessage={setUserMessage}
-          pastedImages={pastedImages}
-          setPastedImages={setPastedImages}
-          isCountingTokens={isCountingTokens}
-          inputTokenCount={inputTokenCount}
-          placeholder={MODES[mode].ui.placeholder}
-        />
-      </div>
+      {mode === 'WORKFLOW' ? (
+          <div className="bg-stone-100/60 dark:bg-slate-900/60 backdrop-blur-xl border border-stone-300 dark:border-slate-800/50 rounded-xl p-4 sm:p-6 shadow-lg animate-fade-in">
+            <h3 className="text-lg font-bold text-stone-900 dark:text-slate-200 mb-4 flex items-center gap-3">
+                <span className="bg-stone-500 dark:bg-slate-600 text-white rounded-full h-7 w-7 flex items-center justify-center font-bold text-base flex-shrink-0">3</span>
+                <span>設定工作流</span>
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-stone-700 dark:text-slate-300 mb-2">模式執行序列</label>
+                    <div className="bg-stone-200 dark:bg-slate-800/60 border border-stone-300 dark:border-slate-700 rounded-lg p-2 min-h-[120px]">
+                        {sequence.map((seqMode, index) => (
+                            <div 
+                                key={`${seqMode}-${index}`}
+                                draggable
+                                onDragStart={() => handleDragStart(index)}
+                                onDragEnter={() => handleDragEnter(index)}
+                                onDragEnd={handleDragEnd}
+                                onDragOver={(e) => e.preventDefault()}
+                                className="flex items-center justify-between p-2 bg-stone-100 dark:bg-slate-900/70 rounded-md mb-1.5 animate-fade-in-up cursor-grab active:cursor-grabbing"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm font-mono text-stone-500">{index + 1}.</span>
+                                    {getModeIcon(seqMode, "h-5 w-5 text-stone-700 dark:text-slate-300")}
+                                    <span className="font-semibold text-stone-800 dark:text-slate-200">{MODES[seqMode].name}</span>
+                                </div>
+                                <button onClick={() => handleRemoveModeFromSequence(index)} className="p-1 text-stone-500 hover:text-red-500 transition-colors">
+                                    <TrashIcon className="h-4 w-4" />
+                                </button>
+                            </div>
+                        ))}
+                         <div className="flex gap-2 p-1">
+                                <select onChange={(e) => { if(e.target.value) handleAddModeToSequence(e.target.value as ReviewMode); e.target.value = ""; }} defaultValue="" className="flex-grow bg-stone-300 dark:bg-slate-700/80 border-stone-400 dark:border-slate-600 rounded-md text-sm p-2 outline-none focus:ring-1 focus:ring-[var(--accent-color)]">
+                                    <option value="" disabled>新增模式至序列...</option>
+                                    {WORKFLOW_MODES.map(m => <option key={m} value={m}>{MODES[m].name}</option>)}
+                                </select>
+                            </div>
+                    </div>
+                </div>
+                <div>
+                     <label htmlFor="cycles" className="block text-sm font-medium text-stone-700 dark:text-slate-300 mb-2">循環次數</label>
+                     <input type="number" id="cycles" value={cycles} onChange={e => setCycles(Math.max(1, parseInt(e.target.value) || 1))} min="1" className="w-full bg-stone-200 dark:bg-slate-800/60 border border-stone-300 dark:border-slate-700 rounded-lg p-3 text-lg font-bold text-center"/>
+                </div>
+            </div>
+          </div>
+      ) : (
+        <div className="relative bg-stone-100/60 dark:bg-slate-900/60 backdrop-blur-xl border border-stone-300 dark:border-slate-800/50 rounded-xl p-4 sm:p-6 dark:ring-1 dark:ring-inset dark:ring-white/10 shadow-lg shadow-stone-200/50 dark:shadow-none transition-all duration-300 hover:border-[var(--accent-color)]/50 dark:hover:shadow-lg dark:hover:shadow-[var(--accent-color)]/10 dark:hover:-translate-y-px">
+            <PromptInputArea 
+                userMessage={userMessage}
+                setUserMessage={setUserMessage}
+                pastedImages={pastedImages}
+                setPastedImages={setPastedImages}
+                isCountingTokens={isCountingTokens}
+                inputTokenCount={inputTokenCount}
+                placeholder={MODES[mode].ui.placeholder}
+            />
+        </div>
+      )}
       
       <div className={`relative transition-all duration-300`}>
-          <button onClick={handleStartReview} disabled={(selectedFilePaths.size === 0 && pastedImages.length === 0) || isSubmitting} className="relative overflow-hidden w-full flex items-center justify-center gap-2 p-4 accent-gradient-bg text-white text-lg font-bold rounded-lg shadow-lg hover:shadow-xl hover:shadow-[var(--accent-color)]/20 transition-all duration-300 transform hover:-translate-y-px active:scale-[0.98] hover:brightness-105 active:brightness-110 disabled:from-stone-400 dark:disabled:from-slate-700 disabled:to-stone-300 dark:disabled:to-slate-600 disabled:text-stone-600 dark:disabled:text-slate-400 disabled:cursor-not-allowed disabled:transform-none before:absolute before:inset-0 before:bg-white/20 before:transition-opacity before:opacity-0 hover:before:opacity-100 before:duration-500 before:ease-in-out dark:before:bg-black/20 before:rounded-lg animate-subtle-pulse">
+          <button
+            onClick={handlePrimaryAction}
+            disabled={(mode !== 'WORKFLOW' && selectedFilePaths.size === 0 && pastedImages.length === 0) || isSubmitting}
+            className="relative overflow-hidden w-full flex items-center justify-center gap-2 p-4 accent-gradient-bg text-white text-lg font-bold rounded-lg shadow-lg hover:shadow-xl hover:shadow-[var(--accent-color)]/20 transition-all duration-300 transform hover:-translate-y-px active:scale-[0.98] hover:brightness-105 active:brightness-110 disabled:from-stone-400 dark:disabled:from-slate-700 disabled:to-stone-300 dark:disabled:to-slate-600 disabled:text-stone-600 dark:disabled:text-slate-400 disabled:cursor-not-allowed disabled:transform-none before:absolute before:inset-0 before:bg-white/20 before:transition-opacity before:opacity-0 hover:before:opacity-100 before:duration-500 before:ease-in-out dark:before:bg-black/20 before:rounded-lg animate-subtle-pulse"
+          >
               <div className="relative z-10 flex items-center justify-center gap-2">
                 <StarIcon className="h-6 w-6" />
                 <span>{MODES[mode].ui.buttonText}</span>

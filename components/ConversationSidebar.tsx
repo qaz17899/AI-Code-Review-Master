@@ -107,6 +107,10 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
         }
     }, [dispatch, newWorkspaceName]);
 
+    const handleSetTooltip = useCallback((data: { conv: Conversation; rect: DOMRect } | null) => {
+        setTooltipData(data);
+    }, []);
+
     const conversationsForCurrentWorkspace = useMemo(() => {
         return conversations
             .filter(conv => conv.workspaceId === activeWorkspaceId)
@@ -259,7 +263,7 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                  onRename={handleRename}
                                  onDelete={handleDelete}
                                  onKeyDown={handleKeyDown}
-                                 onSetTooltip={setTooltipData}
+                                 onSetTooltip={handleSetTooltip}
                                  itemRef={(node) => {
                                      if (node) itemRefs.current.set(conv.id, node);
                                      else itemRefs.current.delete(conv.id);

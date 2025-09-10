@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { SafeMarkdown } from './SafeMarkdown';
 import { CodeBlock } from './CodeBlock';
 import { CopyIcon, CheckIcon, MasterIcon, DownloadIcon, SpinnerIcon } from './icons';
@@ -24,14 +24,14 @@ export const ModelMessage: React.FC<{
 
     const diffs = useMemo(() => parseDiffs(text), [text]);
 
-    const handleCopyCode = (contentToCopy: string, index: number) => {
+    const handleCopyCode = useCallback((contentToCopy: string, index: number) => {
         navigator.clipboard.writeText(contentToCopy).then(() => {
             setCopiedStates(prev => ({ ...prev, [index]: true }));
             setTimeout(() => {
                 setCopiedStates(prev => ({ ...prev, [index]: false }));
             }, 2000);
         });
-    };
+    }, []);
     
     const handleDownloadPatchedFiles = async () => {
         if (!previousUserMessage?.files || diffs.length === 0 || !window.JSZip) return;
@@ -74,13 +74,15 @@ export const ModelMessage: React.FC<{
         
     const renderedReview = useMemo(() => {
         return parts.map((part, index) => {
+            // Use a more stable key for list items to avoid re-mounting during streaming.
+            const stableKey = `${index}-${part.substring(0, 20)}`;
             if (part.startsWith('```')) {
                 const codeBlock = part.replace(/^```(\w*)\n/, '```\n').replace(/```/g, '');
                 const langMatch = part.match(/^```(\w*)/);
                 const lang = langMatch ? langMatch[1] : 'plaintext';
                 const code = codeBlock.substring(1); // remove initial newline
                 return (
-                    <div key={index} className="relative group my-4 bg-stone-300/40 dark:bg-slate-900/70 rounded-lg border border-stone-400 dark:border-slate-700/80">
+                    <div key={stableKey} className="relative group my-4 bg-stone-300/40 dark:bg-slate-900/70 rounded-lg border border-stone-400 dark:border-slate-700/80">
                         <div className="flex justify-between items-center px-4 py-2 bg-stone-300/70 dark:bg-slate-800/80 rounded-t-md">
                             <span className="text-xs text-stone-600 dark:text-slate-400 font-mono">{lang}</span>
                              <button
@@ -99,9 +101,9 @@ export const ModelMessage: React.FC<{
                 )
             }
             // Pass streaming status to SafeMarkdown
-            return <SafeMarkdown key={index} text={part} isStreaming={isStreaming} />;
+            return <SafeMarkdown key={stableKey} text={part} isStreaming={isStreaming} />;
         });
-    }, [parts, copiedStates, isStreaming]);
+    }, [parts, isStreaming, handleCopyCode]);
 
     if (text.length === 0 && isStreaming) {
         return (

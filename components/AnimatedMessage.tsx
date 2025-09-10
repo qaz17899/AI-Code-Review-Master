@@ -9,11 +9,15 @@ export const AnimatedMessage: React.FC<{ messages: string[]; files?: string[]; c
   const combinedMessages = useMemo(() => {
     if (files.length === 0) return messages;
     
-    // More efficient and declarative way to interleave messages
     const fileMessages = files.slice(0, 15).map(f => `掃描 ${f}...`);
-    const interleaved = Array.from({ length: Math.max(messages.length, fileMessages.length) })
-      .flatMap((_, i) => [messages[i], fileMessages[i]])
-      .filter(Boolean) as string[]; // filter(Boolean) removes undefined entries
+    // OPTIMIZATION: Use a direct loop to avoid intermediate arrays from .from, .flatMap, and .filter,
+    // which is more memory-efficient and faster.
+    const interleaved: string[] = [];
+    const maxLength = Math.max(messages.length, fileMessages.length);
+    for (let i = 0; i < maxLength; i++) {
+        if (messages[i]) interleaved.push(messages[i]);
+        if (fileMessages[i]) interleaved.push(fileMessages[i]);
+    }
       
     return interleaved.length > 0 ? interleaved : messages;
   }, [messages, files]);
