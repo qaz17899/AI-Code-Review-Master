@@ -1,8 +1,33 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import type { Conversation } from '../types';
 import { PlusIcon, MessageSquareIcon, TrashIcon, EditIcon, SearchIcon, XIcon } from './icons';
 import { useConversation } from '../contexts/ConversationContext';
 import { useApiSettings } from '../contexts/ApiSettingsContext';
+
+// 1. 建立 Portal 元件，將子元素渲染到 document.body
+const Portal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const [mounted, setMounted] = useState(false);
+    const elementRef = useRef<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+        elementRef.current = document.createElement('div');
+        document.body.appendChild(elementRef.current);
+        setMounted(true);
+        return () => {
+            if (elementRef.current) {
+                document.body.removeChild(elementRef.current);
+            }
+        };
+    }, []);
+
+    if (!mounted || !elementRef.current) {
+        return null;
+    }
+
+    return ReactDOM.createPortal(children, elementRef.current);
+};
+
 
 interface ConversationSidebarProps {
     isOpen: boolean;
@@ -18,6 +43,9 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
     const [editText, setEditText] = useState('');
     const [indicatorStyle, setIndicatorStyle] = useState({});
     
+    // 2. 新增 state 來管理 Tooltip 的資料和位置
+    const [tooltipData, setTooltipData] = useState<{ conv: Conversation; rect: DOMRect } | null>(null);
+
     const inputRef = useRef<HTMLInputElement>(null);
     const listRef = useRef<HTMLUListElement>(null);
     const itemRefs = useRef<Map<string, HTMLLIElement>>(new Map());
@@ -84,11 +112,11 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
 
     return (
         <aside className={`flex-shrink-0 bg-stone-100/75 dark:bg-slate-900/75 backdrop-blur-xl border-r border-stone-300 dark:border-slate-800/50 flex flex-col transition-all duration-300 ease-in-out dark:ring-1 dark:ring-inset dark:ring-white/10 ${isOpen ? 'w-64' : 'w-0'}`}>
-            <div className={`w-64 flex flex-col h-full transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
+            <div className={`w-full flex flex-col h-full transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
                 <div className="flex-shrink-0 p-2 border-b border-stone-300 dark:border-slate-800/50">
                     <button
                         onClick={handleNew}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-stone-800 dark:text-slate-200 bg-stone-50/50 dark:bg-slate-800/50 hover:bg-stone-100/60 dark:hover:bg-slate-700/60 rounded-lg transition-all duration-200 border border-stone-400 dark:border-slate-700 active:scale-95 hover:border-[var(--accent-color)]/70"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-stone-800 dark:text-slate-200 bg-stone-50/50 dark:bg-slate-800/50 rounded-lg transition-all duration-200 border border-stone-400 dark:border-slate-700 hover:border-[var(--accent-color)]/70 hover:shadow-md hover:shadow-[var(--accent-color)]/10 transform-gpu hover:-translate-y-px active:scale-95"
                     >
                         <PlusIcon className="h-5 w-5" />
                         新的對話
@@ -111,6 +139,7 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                          )}
                     </div>
                 </div>
+                {/* 3. 移除 nav 上的 overflow-x-visible，因為不再需要 */}
                 <nav className="flex-grow overflow-y-auto custom-scrollbar p-2">
                     <ul ref={listRef} className="relative space-y-1">
                         <div 
@@ -119,6 +148,8 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                         />
                         {filteredConversations.map((conv, index) => {
                             const isActive = activeConversationId === conv.id && editingId !== conv.id;
+                            const turnCount = Math.ceil(conv.history.length / 2);
+                            const subtitle = `${turnCount} 回合 • ${conv.mode}`;
                             return (
                                 <li 
                                   key={conv.id}
@@ -126,6 +157,9 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                       if (node) itemRefs.current.set(conv.id, node);
                                       else itemRefs.current.delete(conv.id);
                                   }}
+                                  // 4. 新增滑鼠事件來觸發 Tooltip
+                                  onMouseEnter={(e) => setTooltipData({ conv, rect: e.currentTarget.getBoundingClientRect() })}
+                                  onMouseLeave={() => setTooltipData(null)}
                                   className="relative group animate-fade-in-up" 
                                   style={{ animationDelay: `${index * 30}ms`, opacity: 0 }}
                                 >
@@ -153,7 +187,10 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                             />
                                         ) : (
                                             <>
-                                                <span className="text-sm font-medium truncate flex-grow">{conv.title}</span>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium truncate">{conv.title}</p>
+                                                    <p className="text-xs text-stone-500 dark:text-slate-500 truncate">{subtitle}</p>
+                                                </div>
                                                 <div className="flex-shrink-0 flex items-center opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                                                     <button
                                                         onClick={(e) => startEditing(e, conv)}
@@ -173,22 +210,28 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                             </>
                                         )}
                                     </button>
-                                    <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 w-max max-w-xs p-3 bg-stone-50 dark:bg-slate-800 text-stone-800 dark:text-slate-200 text-xs rounded-lg shadow-lg z-30 opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-200 delay-500 border border-stone-300 dark:border-slate-700">
-                                        <div className="space-y-1.5 font-sans text-left">
-                                            <p className="font-bold text-sm accent-gradient-text truncate">{conv.title}</p>
-                                            <div className="border-t border-stone-300 dark:border-slate-700 my-1"></div>
-                                            <p><strong>模式:</strong> <span className="font-mono bg-stone-300 dark:bg-slate-700 px-1 py-0.5 rounded">{conv.mode}</span></p>
-                                            <p><strong>回合數:</strong> {Math.ceil(conv.history.length / 2)}</p>
-                                            <p><strong>建立時間:</strong> {new Date(conv.createdAt).toLocaleString()}</p>
-                                        </div>
-                                        <div className="absolute top-1/2 -translate-y-1/2 -left-1 w-2 h-2 bg-stone-50 dark:bg-slate-800 rotate-45 border-b border-l border-stone-300 dark:border-slate-700"></div>
-                                    </div>
+                                    {/* 5. 移除舊的、會被裁切的 Tooltip DOM 結構 */}
                                 </li>
                             )
                         })}
                     </ul>
                 </nav>
             </div>
-        </aside>
-    );
-};
+            {/* 6. 在元件底部，透過 Portal 渲染新的 Tooltip */}
+            {tooltipData && (
+                <Portal>
+                    <div
+                        className="fixed w-max max-w-xs p-3 bg-stone-50 dark:bg-slate-800 text-stone-800 dark:text-slate-200 text-xs rounded-lg shadow-lg z-50 animate-fade-in border border-stone-300 dark:border-slate-700"
+                        style={{
+                            left: `${tooltipData.rect.right + 10}px`,
+                            top: `${tooltipData.rect.top + tooltipData.rect.height / 2}px`,
+                            transform: 'translateY(-50%)',
+                            animationDuration: '150ms'
+                        }}
+                    >
+                        <div className="space-y-1.5 font-sans text-left">
+                            <p className="font-bold text-sm accent-gradient-text truncate">{tooltipData.conv.title}</p>
+                            <div className="border-t border-stone-300 dark:border-slate-700 my-1"></div>
+                            <p><strong>模式:</strong> <span className="font-mono bg-stone-300 dark:bg-slate-700 px-1 py-0.5 rounded">{tooltipData.conv.mode}</span></p>
+                            <p><strong>回合數:</strong> {Math.ceil(tooltipData.conv.history.length / 2)}</p>
+                            <p><strong>

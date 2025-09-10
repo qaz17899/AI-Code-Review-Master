@@ -118,10 +118,10 @@ export const FollowUpForm: React.FC<{
                         {files.length > 0 && (
                             <div className="flex flex-wrap gap-2">
                                 {files.map(file => (
-                                    <div key={file.path} className="flex items-center gap-2 bg-stone-300 dark:bg-slate-700/80 p-1.5 rounded-md text-xs animate-fade-in">
+                                    <div key={file.path} className="flex items-center gap-1.5 bg-stone-300 dark:bg-slate-700/80 pl-2 pr-1 py-1 rounded-full text-xs animate-fade-in">
                                         {getFileIcon(file.name)}
                                         <span className="font-mono text-stone-700 dark:text-slate-300 truncate max-w-xs">{file.path}</span>
-                                        <button type="button" onClick={() => handleRemoveFile(file.path)} className="text-stone-500 dark:text-slate-500 hover:text-red-500 transition-colors text-lg font-light flex-shrink-0" aria-label={`移除 ${file.path}`}>&times;</button>
+                                        <button type="button" onClick={() => handleRemoveFile(file.path)} className="flex-shrink-0 h-4 w-4 rounded-full flex items-center justify-center text-stone-500 dark:text-slate-400 hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-400 transition-colors" aria-label={`移除 ${file.path}`}><XIcon className="h-3 w-3"/></button>
                                     </div>
                                 ))}
                             </div>

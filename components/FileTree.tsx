@@ -70,8 +70,8 @@ const TreeNode: React.FC<TreeNodeProps> = ({
         }
 
         return (
-            <div className="animate-fade-in" style={{ animationDuration: '300ms', animationDelay: `${animationIndex * 20}ms`, opacity: 0 }}>
-                <div className="flex items-center gap-1 group text-sm p-0.5 rounded-md hover:bg-stone-300/60 dark:hover:bg-slate-700/50">
+            <div className="animate-fade-in-up" style={{ animationDuration: '300ms', animationDelay: `${animationIndex * 20}ms`, opacity: 0 }}>
+                <div className="flex items-center gap-1.5 group text-sm p-0.5 rounded-md hover:bg-stone-300/60 dark:hover:bg-slate-700/50">
                     <button onClick={() => onToggleFolder(node.path)} className="flex items-center gap-1 flex-grow text-left" style={{ paddingLeft: `${level * 1.25}rem` }}>
                         {isExpanded ? <ChevronDownIcon className="h-4 w-4 flex-shrink-0" /> : <ChevronRightIcon className="h-4 w-4 flex-shrink-0" />}
                         <div onClick={(e) => {e.stopPropagation(); onToggleFileSelection(node.path, true)}} className={`w-5 h-5 flex-shrink-0 border-2 rounded-md flex items-center justify-center transition-colors ${selectionState !== 'none' ? 'accent-gradient-bg border-transparent' : 'border-stone-500 dark:border-slate-600'}`}>
@@ -99,7 +99,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
     const isRecommended = recommendedPaths.has(node.path);
 
     return (
-        <div className="flex items-center gap-1 group text-sm p-0.5 rounded-md hover:bg-stone-300/60 dark:hover:bg-slate-700/50 animate-fade-in" style={{ animationDuration: '300ms', animationDelay: `${animationIndex * 20}ms`, opacity: 0 }}>
+        <div className="flex items-center gap-1.5 group text-sm p-0.5 rounded-md hover:bg-stone-300/60 dark:hover:bg-slate-700/50 animate-fade-in-up" style={{ animationDuration: '300ms', animationDelay: `${animationIndex * 20}ms`, opacity: 0 }}>
             <button onClick={() => onToggleFileSelection(node.path, false)} className="flex items-center gap-2 flex-grow text-left" style={{ paddingLeft: `${level * 1.25 + 0.5}rem` }}>
                 <div className="w-1.5 h-full"></div>
                 <div className={`w-5 h-5 flex-shrink-0 border-2 rounded-md flex items-center justify-center transition-colors ${isSelected ? 'accent-gradient-bg border-transparent' : 'border-stone-500 dark:border-slate-600'}`}>

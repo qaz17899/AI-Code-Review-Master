@@ -375,11 +375,11 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ history, onFollowU
                     </div>
                 )}
                  {isDraggingOver && (
-                    <div className="absolute inset-0 bg-stone-900/50 backdrop-blur-sm flex flex-col items-center justify-center z-10 pointer-events-none animate-fade-in" style={{animationDuration: '150ms'}}>
-                        <div className="p-8 border-4 border-dashed border-[var(--accent-color)] rounded-2xl text-center">
-                            <UploadIcon className="h-16 w-16 text-[var(--accent-color)] mx-auto mb-4 animate-bounce" />
-                            <p className="text-xl font-bold text-white">將檔案拖曳至此處以上傳</p>
-                            <p className="text-slate-300">放開即可加入至您的下一則訊息</p>
+                    <div className="absolute inset-0 bg-stone-900/50 backdrop-blur-sm flex flex-col items-center justify-center z-10 pointer-events-none animate-fade-in" style={{ animationDuration: '150ms' }}>
+                        <div className="p-8 border-4 border-dashed border-[var(--accent-color)] rounded-2xl text-center bg-white/5 shadow-2xl shadow-black/50">
+                            <UploadIcon className="h-16 w-16 text-[var(--accent-color)] mx-auto mb-4 animate-bounce" style={{ animationDuration: '1.5s' }} />
+                            <p className="text-xl font-bold text-white drop-shadow-md">將檔案拖曳至此處以上傳</p>
+                            <p className="text-slate-300 drop-shadow-md">放開即可加入至您的下一則訊息</p>
                         </div>
                     </div>
                 )}

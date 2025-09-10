@@ -110,11 +110,13 @@ export const ModelMessage: React.FC<{
 
     if (text.length === 0 && isStreaming) {
         return (
-            <div className="flex items-start gap-4 p-2">
-                <MasterIcon className="h-8 w-8 text-[var(--accent-color)] animate-master-pulse flex-shrink-0 mt-1" />
-                <div className="flex-grow">
-                    <p className="font-bold text-stone-800 dark:text-slate-300">大師正在思考...</p>
-                    <AnimatedMessage messages={DEEP_DIVE_MESSAGES} className="text-sm text-stone-600 dark:text-slate-400 h-5" />
+            <div className="flex items-center gap-3">
+                <MasterIcon className="h-6 w-6 text-[var(--accent-color)] animate-spin-slow flex-shrink-0" style={{ animationDuration: '3s' }}/>
+                <div className="flex-1 min-w-0">
+                    <AnimatedMessage 
+                        messages={DEEP_DIVE_MESSAGES} 
+                        className="text-base font-medium bg-clip-text text-transparent bg-gradient-to-r from-stone-600 via-stone-400 to-stone-600 dark:from-slate-300 dark:via-slate-500 dark:to-slate-300 bg-[length:200%_auto] animate-text-shimmer"
+                    />
                 </div>
             </div>
         );
