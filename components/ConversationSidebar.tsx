@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import type { Conversation } from '../types';
 import { PlusIcon, MessageSquareIcon, TrashIcon, EditIcon, SearchIcon, XIcon } from './icons';
 import { useConversation } from '../contexts/ConversationContext';
@@ -19,8 +19,6 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
     const [searchQuery, setSearchQuery] = useState('');
     const [editText, setEditText] = useState('');
     const [indicatorStyle, setIndicatorStyle] = useState({});
-    
-    // 2. 新增 state 來管理 Tooltip 的資料和位置
     const [tooltipData, setTooltipData] = useState<{ conv: Conversation; rect: DOMRect } | null>(null);
 
     const inputRef = useRef<HTMLInputElement>(null);
@@ -116,7 +114,6 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                          )}
                     </div>
                 </div>
-                {/* 3. 移除 nav 上的 overflow-x-visible，因為不再需要 */}
                 <nav className="flex-grow overflow-y-auto custom-scrollbar p-2">
                     <ul ref={listRef} className="relative space-y-1">
                         <div 
@@ -134,7 +131,6 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                       if (node) itemRefs.current.set(conv.id, node);
                                       else itemRefs.current.delete(conv.id);
                                   }}
-                                  // 4. 新增滑鼠事件來觸發 Tooltip
                                   onMouseEnter={(e) => setTooltipData({ conv, rect: e.currentTarget.getBoundingClientRect() })}
                                   onMouseLeave={() => setTooltipData(null)}
                                   className="relative group animate-fade-in-up" 
@@ -187,14 +183,12 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                             </>
                                         )}
                                     </button>
-                                    {/* 5. 移除舊的、會被裁切的 Tooltip DOM 結構 */}
                                 </li>
                             )
                         })}
                     </ul>
                 </nav>
             </div>
-            {/* 6. 在元件底部，透過 Portal 渲染新的 Tooltip */}
             {tooltipData && (
                 <Portal>
                     <div

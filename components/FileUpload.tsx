@@ -123,7 +123,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFilesChange, acceptedT
         mozdirectory=""
       />
       <div className="flex flex-col items-center justify-center text-stone-600 dark:text-slate-400 pointer-events-none">
-        <UploadIcon className="h-12 w-12 mb-4 text-stone-500 dark:text-slate-500 transition-colors" style={{ color: isDragging ? 'var(--accent-color)' : '' }} />
+        <UploadIcon className={`h-12 w-12 mb-4 text-stone-500 dark:text-slate-500 transition-all duration-300 ${isDragging ? 'text-[var(--accent-color)] animate-bounce' : ''}`} />
         <p className="text-lg font-semibold text-stone-700 dark:text-slate-300">
           將您的專案資料夾或檔案拖放到此處
         </p>

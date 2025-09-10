@@ -76,7 +76,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
                         <TrashIcon className="h-4 w-4" />
                     </button>
                 </div>
-                {isExpanded && <div className="border-l border-stone-400 dark:border-slate-700 ml-3">{childrenContent}</div>}
+                {isExpanded && <div className="pl-3 border-l border-dashed border-stone-400/70 dark:border-slate-700/50 ml-3.5">{childrenContent}</div>}
             </div>
         );
     }

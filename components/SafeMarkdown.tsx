@@ -60,7 +60,7 @@ export const SafeMarkdown: React.FC<{ text: string; }> = ({ text }) => {
 
             if (trimmedLine.startsWith('## ')) {
                 flushAll();
-                elements.push(<h2 key={key} className="text-2xl font-bold mt-6 mb-2 text-stone-900 dark:text-slate-200 border-b border-transparent [border-image:linear-gradient(to_right,theme(colors.stone.400),transparent)_1] dark:[border-image:linear-gradient(to_right,theme(colors.slate.700),transparent)_1] pb-1">{parseInline(trimmedLine.substring(3))}</h2>);
+                elements.push(<h2 key={key} className="text-2xl font-bold mt-6 mb-3 text-stone-900 dark:text-slate-100 border-b-2 border-transparent pb-2 [border-image:linear-gradient(to_right,var(--accent-color),transparent)_1]">{parseInline(trimmedLine.substring(3))}</h2>);
             } else if (trimmedLine.startsWith('### ')) {
                 flushAll();
                 elements.push(<h3 key={key} className="text-xl font-bold mt-4 mb-1 text-[var(--accent-color)]">{parseInline(trimmedLine.substring(4))}</h3>);

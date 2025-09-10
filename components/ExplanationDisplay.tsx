@@ -115,7 +115,7 @@ export const ExplanationDisplay: React.FC<ExplanationDisplayProps> = ({ state, o
                             {state.followUpError && <p className="text-xs text-red-500 dark:text-red-400 mt-2">追問失敗: {state.followUpError}</p>}
                             
                             {/* Follow-up form */}
-                            <form onSubmit={handleSubmit} className="mt-4 pt-4 border-t border-stone-400/70 dark:border-slate-700/60 relative">
+                            <form onSubmit={handleSubmit} className="mt-4 pt-4 border-t border-stone-400/70 dark:border-slate-700/60 relative flex items-center gap-2">
                                 <textarea
                                     ref={textareaRef}
                                     value={followUpMessage}
@@ -123,13 +123,13 @@ export const ExplanationDisplay: React.FC<ExplanationDisplayProps> = ({ state, o
                                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(e); } }}
                                     disabled={state.isGeneratingFollowUp}
                                     rows={1}
-                                    className="w-full bg-stone-300/50 dark:bg-slate-800/60 border border-stone-400 dark:border-slate-700 rounded-lg pl-3 pr-10 py-1.5 text-sm resize-none custom-scrollbar focus:ring-1 focus:ring-[var(--accent-color)] focus:border-[var(--accent-color)] outline-none transition placeholder:text-stone-500 dark:placeholder:text-slate-500 max-h-32"
+                                    className="flex-grow bg-stone-300/50 dark:bg-slate-800/60 border border-stone-400 dark:border-slate-700 rounded-lg pl-3 pr-2 py-1.5 text-sm resize-none custom-scrollbar focus:ring-1 focus:ring-[var(--accent-color)] focus:border-[var(--accent-color)] outline-none transition placeholder:text-stone-500 dark:placeholder:text-slate-500 max-h-32"
                                     placeholder="對此解說提出追問..."
                                 />
                                 <button
                                     type="submit"
                                     disabled={!followUpMessage.trim() || state.isGeneratingFollowUp}
-                                    className="absolute right-1.5 top-[1.35rem] p-1.5 rounded-full text-stone-600 dark:text-slate-400 hover:bg-stone-400/80 dark:hover:bg-slate-700/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    className="p-1.5 rounded-full text-stone-600 dark:text-slate-400 hover:bg-stone-400/80 dark:hover:bg-slate-700/80 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform-gpu hover:scale-110 active:scale-95 flex-shrink-0"
                                     aria-label="傳送追問"
                                 >
                                     {state.isGeneratingFollowUp 
