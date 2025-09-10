@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import type { Conversation } from '../types';
 import { PlusIcon, MessageSquareIcon, TrashIcon, EditIcon, SearchIcon, XIcon } from './icons';
 import { useConversation } from '../contexts/ConversationContext';
+import { MODES } from '../config/modes';
 import { useApiSettings } from '../contexts/ApiSettingsContext';
 import Portal from './Portal';
 
@@ -122,8 +123,8 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                         />
                         {filteredConversations.map((conv, index) => {
                             const isActive = activeConversationId === conv.id && editingId !== conv.id;
-                            const turnCount = Math.ceil(conv.history.length / 2);
-                            const subtitle = `${turnCount} 回合 • ${conv.mode}`;
+                            const turnCount = Math.ceil(conv.history.length / 2);                            
+                            const subtitle = `${turnCount} 回合 • ${MODES[conv.mode]?.name || conv.mode}`;
                             return (
                                 <li 
                                   key={conv.id}
@@ -203,7 +204,7 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                         <div className="space-y-1.5 font-sans text-left">
                             <p className="font-bold text-sm accent-gradient-text truncate">{tooltipData.conv.title}</p>
                             <div className="border-t border-stone-300 dark:border-slate-700 my-1"></div>
-                            <p><strong>模式:</strong> <span className="font-mono bg-stone-300 dark:bg-slate-700 px-1 py-0.5 rounded">{tooltipData.conv.mode}</span></p>
+                            <p><strong>模式:</strong> <span className="font-mono bg-stone-300 dark:bg-slate-700 px-1 py-0.5 rounded">{MODES[tooltipData.conv.mode]?.name || tooltipData.conv.mode}</span></p>
                             <p><strong>回合數:</strong> {Math.ceil(tooltipData.conv.history.length / 2)}</p>
                             <p><strong>建立時間:</strong> {new Date(tooltipData.conv.createdAt).toLocaleString()}</p>
                         </div>

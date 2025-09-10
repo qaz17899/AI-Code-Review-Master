@@ -80,7 +80,9 @@ const App: React.FC = () => {
                         <MasterIcon className="h-9 w-9 animate-spin-slow animate-master-pulse transition-all duration-300 group-hover:scale-110 group-hover:shadow-[0_0_15px_var(--accent-color)] rounded-full" style={{ animationDuration: '5s', transitionProperty: 'transform, box-shadow' }}/>
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold accent-gradient-text">AI Code Review Master</h1>
+                        <h1 key={activeConversation?.mode} className="text-xl font-bold accent-gradient-text animate-fade-in-up">
+                            {MODES[activeConversation?.mode || 'REVIEW'].ui.mainTitle}
+                        </h1>
                         <p key={activeConversation?.mode} className="text-xs text-stone-600 dark:text-slate-400 opacity-80 -mt-1 animate-fade-in-up">
                             {MODES[activeConversation?.mode || 'REVIEW'].ui.subTitle}
                         </p>
@@ -90,14 +92,14 @@ const App: React.FC = () => {
 
             <div className="hidden lg:flex items-center gap-4 bg-stone-200 dark:bg-slate-800/50 border border-stone-300 dark:border-slate-700/50 px-3 py-1.5 rounded-full shadow-inner dark:shadow-black/20">
                 <div className="flex items-baseline gap-1.5 text-sm">
-                    <span className="font-medium text-stone-600 dark:text-slate-400">Mode:</span>
+                    <span className="font-medium text-stone-600 dark:text-slate-400">模式:</span>
                     <span key={activeConversation?.mode} className="font-semibold font-mono text-[var(--accent-color)] px-2 py-0.5 bg-[var(--accent-color)]/10 rounded animate-fade-in-up">
-                        {activeConversation?.mode || 'N/A'}
+                        {MODES[activeConversation?.mode || 'REVIEW']?.name || activeConversation?.mode || 'N/A'}
                     </span>
                 </div>
                 <div className="h-4 w-px bg-stone-400 dark:bg-slate-600"></div>
                 <div className="flex items-baseline gap-1.5 text-sm">
-                    <span className="font-medium text-stone-600 dark:text-slate-400">AI Core:</span>
+                    <span className="font-medium text-stone-600 dark:text-slate-400">AI 核心:</span>
                     <span className="font-semibold font-mono text-stone-800 dark:text-slate-200 capitalize">{activeConversation?.provider || 'N/A'}</span>
                 </div>
                 <div className="h-4 w-px bg-stone-400 dark:bg-slate-600"></div>
@@ -106,7 +108,7 @@ const App: React.FC = () => {
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500 ring-1 ring-green-400/50"></span>
                     </div>
-                    <span className="font-semibold text-green-600 dark:text-green-400">Ready</span>
+                    <span className="font-semibold text-green-600 dark:text-green-400">準備就緒</span>
                 </div>
             </div>
 

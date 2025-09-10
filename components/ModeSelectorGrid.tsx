@@ -57,7 +57,7 @@ const ModeButton: React.FC<{
                     <div className="flex items-start justify-between">
                         <div className="flex items-center gap-2 pr-2">
                              {getModeIcon(mode, `h-6 w-6 ${isSelected ? 'text-[var(--accent-color)]' : 'text-stone-600 dark:text-slate-400'} flex-shrink-0`)}
-                             <p className={`font-semibold uppercase text-base ${isSelected ? 'accent-gradient-text' : 'text-stone-800 dark:text-slate-200'}`}>{mode}</p>
+                             <p className={`font-semibold text-base ${isSelected ? 'accent-gradient-text' : 'text-stone-800 dark:text-slate-200'}`}>{MODES[mode].name}</p>
                         </div>
                         <button
                             className="text-stone-500 dark:text-slate-500 hover:text-[var(--accent-color)] transition-colors z-10 flex-shrink-0"
