@@ -79,11 +79,11 @@ const App: React.FC = () => {
                     <div className="group relative flex items-center justify-center">
                         <MasterIcon className="h-9 w-9 animate-spin-slow animate-master-pulse transition-all duration-300 group-hover:scale-110 group-hover:shadow-[0_0_15px_var(--accent-color)] rounded-full" style={{ animationDuration: '5s', transitionProperty: 'transform, box-shadow' }}/>
                     </div>
-                    <div>
-                        <h1 key={activeConversation?.mode} className="text-xl font-bold accent-gradient-text animate-fade-in-up">
+                    <div key={activeConversation?.mode}>
+                        <h1 className="text-xl font-bold accent-gradient-text animate-fade-in-up">
                             {MODES[activeConversation?.mode || 'REVIEW'].ui.mainTitle}
                         </h1>
-                        <p key={activeConversation?.mode} className="text-xs text-stone-600 dark:text-slate-400 opacity-80 -mt-1 animate-fade-in-up">
+                        <p className="text-xs text-stone-600 dark:text-slate-400 opacity-80 -mt-1 animate-fade-in-up">
                             {MODES[activeConversation?.mode || 'REVIEW'].ui.subTitle}
                         </p>
                     </div>
