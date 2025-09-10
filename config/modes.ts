@@ -1,10 +1,10 @@
 import React from 'react';
 import type { ReviewMode } from '../types';
 import {
-    StarIcon, RefactorIcon, TesterIcon, DesignIcon, EnhancementIcon, ScalabilityIcon,
+    StarIcon, TesterIcon, DesignIcon, EnhancementIcon, ScalabilityIcon,
     SecurityIcon, DocumentationIcon, BroomIcon, BugAntIcon, QuestionMarkCircleIcon,
     BoltIcon, PaintBrushIcon, CodeBracketIcon, ScaleIcon, CheckBadgeIcon, ScissorsIcon,
-    WorkflowIcon, WandIcon,
+    WorkflowIcon, WandIcon, RefreshIcon,
 } from '../components/icons';
 import { SHARED_DEPENDENCY_INSTRUCTION } from '../components/constants';
 
@@ -37,7 +37,7 @@ export const MODES: Record<ReviewMode, ModeConfig> = {
         example: { title: '全面審查 (Review)', prompt: `// is-flashing.js\nfunction isFlashing(inventory) {\n  let isFlashing = false;\n  for (let i = 0; i < inventory.length; i++) {\n    if (inventory[i].type === 'flash' && inventory[i].remaining > 0) {\n      isFlashing = true;\n    }\n  }\n  return isFlashing;\n}`, response: `### 審查報告\n這段程式碼的功能是正確的，但有幾個可以改進的地方，讓它更簡潔、更具現代 JavaScript 風格。\n\n#### 1. 使用 \`some\` 方法簡化迴圈\n\`for\` 迴圈的寫法比較冗長。可以使用陣列的 \`some\` 方法來達到同樣的目的，程式碼會更具可讀性。\`some\` 方法會在找到第一個符合條件的元素後立即停止遍歷，效率更高。\n\n### 修改建議\n\`\`\`javascript\n// is-flashing.js\nfunction hasFlashbang(inventory) {\n  return inventory.some(item => item.type === 'flash' && item.remaining > 0);\n}\n\`\`\`` }
     },
     REFACTOR: {
-        icon: RefactorIcon,
+        icon: RefreshIcon,
         description: '改善程式碼結構和可讀性，而不改變其功能。',
         theme: { gradient: { c1: 'rgba(5, 150, 105, 0.15)',  c2: 'rgba(13, 148, 136, 0.15)' },  accent: { color: '#10b981', hover: '#34d399', from: '#34d399', to: '#2dd4bf' } },
         prompt: `你是一位軟體架構與重構專家，專精於提升程式碼品質而不改變功能。\n\n你的重構步驟：\n1. **識別程式碼異味：** 找出重複程式碼、過長函式、複雜條件、緊耦合等問題\n2. **分析改進機會：** 評估可讀性、維護性和擴展性的提升空間\n3. **應用重構技法：** 運用提取函式、引入參數物件、策略模式等重構手法\n4. **驗證設計原則：** 確保符合 SOLID 原則和適當的設計模式\n${SHARED_DEPENDENCY_INSTRUCTION}\n\n請解釋每項變更如何改善程式碼品質。`,

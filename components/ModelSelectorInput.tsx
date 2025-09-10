@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RefreshIcon } from './icons';
+import { RefreshIcon, SpinnerIcon } from './icons';
 import { listModels } from '../services/aiService';
 import type { ApiProvider, ApiSettings } from '../types';
 
@@ -61,7 +61,7 @@ export const ModelSelectorInput: React.FC<ModelSelectorInputProps> = ({ id, labe
                     aria-label="重新整理模型列表"
                 >
                     {isLoading 
-                        ? <div className="animate-spin h-5 w-5 border-2 border-stone-500 border-t-transparent rounded-full"></div>
+                        ? <SpinnerIcon className="h-5 w-5 animate-spin" />
                         : <RefreshIcon className="h-5 w-5" />
                     }
                 </button>

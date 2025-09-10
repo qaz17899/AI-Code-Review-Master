@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 // FIX: Added UploadIcon to imports as it is used for the drag-and-drop overlay.
-import { CopyIcon, CheckIcon, UserIcon, MasterIcon, TrashIcon, SparklesIcon, TokenIcon, ChevronDownIcon, RefactorIcon, StopIcon, ClockIcon, UploadIcon } from './icons';
+import { CopyIcon, CheckIcon, UserIcon, MasterIcon, TrashIcon, SparklesIcon, TokenIcon, ChevronDownIcon, RefreshIcon, StopIcon, ClockIcon, UploadIcon } from './icons';
 import type { ChatMessage, AppFile, ApiSettings } from '../types';
 import { ImageModal } from './ImageModal';
 import { explainResponse, generateExplanationStream } from '../services/geminiService';
@@ -360,7 +360,7 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ history, onFollowU
                     {!isSubmitting && history.length > 0 && (
                         <div className="flex justify-center animate-fade-in">
                             <button onClick={onRegenerate} className="group flex items-center gap-2 px-4 py-1.5 bg-stone-200/50 dark:bg-slate-800/50 text-stone-600 dark:text-slate-400 border border-stone-400/50 dark:border-slate-700/50 rounded-full hover:border-[var(--accent-color)]/50 hover:bg-stone-300/50 dark:hover:bg-slate-800 transition-all duration-200 text-sm font-semibold">
-                                <RefactorIcon className="h-4 w-4 transition-colors group-hover:text-[var(--accent-color)]" />
+                                <RefreshIcon className="h-4 w-4 transition-colors group-hover:text-[var(--accent-color)]" />
                                 重新生成
                             </button>
                         </div>

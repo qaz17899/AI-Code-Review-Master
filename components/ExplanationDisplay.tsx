@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { SparklesIcon, UserIcon, SendIcon, ChevronDownIcon, XIcon } from './icons';
+import { SparklesIcon, UserIcon, SendIcon, ChevronDownIcon, XIcon, SpinnerIcon } from './icons';
 import { SafeMarkdown } from './SafeMarkdown';
 
 interface ExplanationDisplayProps {
@@ -76,7 +76,7 @@ export const ExplanationDisplay: React.FC<ExplanationDisplayProps> = ({ state, o
                  <div className="mt-3 animate-fade-in" style={{animationDuration: '300ms'}}>
                     {state.isLoading && (
                         <div className="flex items-center gap-2 text-sm text-stone-600 dark:text-slate-400">
-                            <div className="animate-spin h-4 w-4 border-2 border-stone-500 border-t-transparent rounded-full"></div>
+                            <SpinnerIcon className="h-4 w-4 animate-spin" />
                             <span>正在為您分析...</span>
                         </div>
                     )}
@@ -133,7 +133,7 @@ export const ExplanationDisplay: React.FC<ExplanationDisplayProps> = ({ state, o
                                     aria-label="傳送追問"
                                 >
                                     {state.isGeneratingFollowUp 
-                                        ? <div className="animate-spin h-4 w-4 border-2 border-stone-500 border-t-transparent rounded-full"></div>
+                                        ? <SpinnerIcon className="h-4 w-4 animate-spin" />
                                         : <SendIcon className="h-4 w-4" />
                                     }
                                 </button>
