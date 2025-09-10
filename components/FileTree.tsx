@@ -27,7 +27,7 @@ interface TreeNodeProps {
 }
 
 
-const TreeNode: React.FC<TreeNodeProps> = ({
+const TreeNodeComponent: React.FC<TreeNodeProps> = ({
     node, level, folderFileMap, selectedFilePaths, recommendedPaths, expandedFolders, fileFilter, animationIndex,
     onToggleFolder, onToggleFileSelection, onRemove
 }) => {
@@ -110,6 +110,8 @@ const TreeNode: React.FC<TreeNodeProps> = ({
         </div>
     );
 };
+
+const TreeNode = React.memo(TreeNodeComponent);
 
 
 interface FileTreeProps {

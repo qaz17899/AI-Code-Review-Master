@@ -16,8 +16,14 @@ const parseInline = (text: string): React.ReactNode[] => {
   }).filter(Boolean);
 };
 
-export const SafeMarkdown: React.FC<{ text: string; }> = ({ text }) => {
+const MemoizedSafeMarkdown: React.FC<{ text: string; isStreaming: boolean; }> = ({ text, isStreaming }) => {
+    // During streaming, render raw text to avoid expensive parsing on every chunk.
+    if (isStreaming) {
+        return <div className="my-2 text-stone-700 dark:text-slate-300 leading-loose whitespace-pre-wrap">{text}</div>;
+    }
+
     const elements = React.useMemo(() => {
+        if (!text) return [];
         const lines = text.split('\n');
         const elements: React.ReactNode[] = [];
         let currentListItems: React.ReactElement[] = [];
@@ -85,3 +91,5 @@ export const SafeMarkdown: React.FC<{ text: string; }> = ({ text }) => {
 
     return <>{elements}</>;
 };
+
+export const SafeMarkdown = React.memo(MemoizedSafeMarkdown);

@@ -1,21 +1,27 @@
 import React, { useRef, useEffect } from 'react';
 
-export const CodeBlock: React.FC<{ code: string, lang: string }> = ({ code, lang }) => {
+export const CodeBlock: React.FC<{ code: string, lang: string, isStreaming: boolean }> = ({ code, lang, isStreaming }) => {
     const codeRef = useRef<HTMLElement>(null);
 
     useEffect(() => {
         if (codeRef.current) {
             const element = codeRef.current;
-            element.textContent = code;
-
-            // @ts-ignore - Assuming hljs is available globally
-            if (window.hljs) {
-                element.removeAttribute('data-highlighted');
-                // @ts-ignore
-                window.hljs.highlightElement(element);
+            
+            // Only apply raw text content during streaming to avoid performance hit
+            if (isStreaming) {
+                element.textContent = code;
+            } else {
+                // Once streaming is done, apply highlighting
+                element.textContent = code; // Ensure content is up to date
+                // @ts-ignore - Assuming hljs is available globally
+                if (window.hljs) {
+                    element.removeAttribute('data-highlighted');
+                    // @ts-ignore
+                    window.hljs.highlightElement(element);
+                }
             }
         }
-    }, [code, lang]);
+    }, [code, lang, isStreaming]);
 
     return (
         <pre className="p-4 overflow-x-auto text-sm text-slate-800 dark:text-slate-200 font-mono custom-scrollbar">

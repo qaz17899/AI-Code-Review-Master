@@ -85,7 +85,8 @@ export const ExplanationDisplay: React.FC<ExplanationDisplayProps> = ({ state, o
                     {state.error && <p className="text-sm text-red-500 dark:text-red-400">解說失敗: {state.error}</p>}
                     {state.content && (
                         <>
-                            <div className="text-sm prose prose-invert max-w-none text-stone-700 dark:text-slate-300 leading-relaxed"><SafeMarkdown text={state.content} /></div>
+                            {/* FIX: Add missing 'isStreaming' prop to SafeMarkdown. The initial explanation is not streamed. */}
+                            <div className="text-sm prose prose-invert max-w-none text-stone-700 dark:text-slate-300 leading-relaxed"><SafeMarkdown text={state.content} isStreaming={false} /></div>
                             
                             {/* Follow-up chat history */}
                             <div className="mt-4 pt-4 border-t border-stone-400/70 dark:border-slate-700/60 space-y-4 text-sm">
@@ -103,7 +104,8 @@ export const ExplanationDisplay: React.FC<ExplanationDisplayProps> = ({ state, o
                                             <div key={index} className="flex items-start gap-2.5 animate-fade-in-up" style={{animationDuration: '300ms'}}>
                                                 <SparklesIcon className="h-4 w-4 text-[var(--accent-color)] mt-0.5 flex-shrink-0" />
                                                 <div className="flex-grow text-stone-700 dark:text-slate-300 prose prose-invert max-w-none text-sm leading-relaxed">
-                                                    {msg.content ? <SafeMarkdown text={msg.content} /> : null}
+                                                    {/* FIX: Add missing 'isStreaming' prop to SafeMarkdown. Follow-up responses can be streamed. */}
+                                                    {msg.content ? <SafeMarkdown text={msg.content} isStreaming={isLast && state.isGeneratingFollowUp} /> : null}
                                                     {isLast && state.isGeneratingFollowUp && !msg.content && (
                                                         <div className="animate-pulse h-3 bg-stone-400 dark:bg-slate-700 rounded-md w-1/3"></div>
                                                     )}
@@ -114,7 +116,7 @@ export const ExplanationDisplay: React.FC<ExplanationDisplayProps> = ({ state, o
                                 })}
                                 <div ref={historyEndRef} />
                             </div>
-                            {state.followUpError && <p className="text-xs text-red-500 dark:text-red-400 mt-2">追問失敗: {state.followUpError}</p>}
+                            {state.followUpError && <p className="text-xs text-red-500 dark:text-red-400 mt-2">追問失败: {state.followUpError}</p>}
                             
                             {/* NEW: Suggested Questions */}
                             {state.suggestedQuestions && state.suggestedQuestions.length > 0 && !state.isGeneratingFollowUp && (

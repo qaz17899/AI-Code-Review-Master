@@ -246,69 +246,27 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                             </div>
                         )}
                         {filteredConversations.map((conv, index) => {
-                            const isActive = activeConversationId === conv.id && editingId !== conv.id;
-                            const turnCount = Math.ceil(conv.history.length / 2);                            
-                            const subtitle = `${turnCount} 回合 • ${MODES[conv.mode]?.name || conv.mode}`;
                             return (
-                                <li 
-                                  key={conv.id}
-                                  ref={node => {
-                                      if (node) itemRefs.current.set(conv.id, node);
-                                      else itemRefs.current.delete(conv.id);
-                                  }}
-                                  onMouseEnter={(e) => setTooltipData({ conv, rect: e.currentTarget.getBoundingClientRect() })}
-                                  onMouseLeave={() => setTooltipData(null)}
-                                  className="relative group animate-fade-in-up" 
-                                  style={{ animationDelay: `${index * 30}ms`, opacity: 0 }}
-                                >
-                                    <button
-                                        onClick={() => editingId !== conv.id && handleSelect(conv.id)}
-                                        className={`w-full relative flex items-center gap-3 p-2 rounded-lg text-left transition-all duration-200 transform-gpu ${
-                                            isActive
-                                            ? 'text-white' 
-                                            : editingId === conv.id
-                                            ? 'bg-stone-100/80 dark:bg-slate-700/80 ring-1 ring-[var(--accent-color)]'
-                                            : 'text-stone-700 dark:text-slate-400 hover:bg-stone-100/70 dark:hover:bg-slate-800/70 hover:translate-x-1'
-                                        }`}
-                                    >
-                                        <MessageSquareIcon className="h-5 w-5 flex-shrink-0 ml-1" />
-                                        {editingId === conv.id ? (
-                                            <input
-                                                ref={inputRef}
-                                                type="text"
-                                                value={editText}
-                                                onChange={(e) => setEditText(e.target.value)}
-                                                onBlur={() => handleRename(conv.id)}
-                                                onKeyDown={(e) => handleKeyDown(e, conv.id)}
-                                                onClick={(e) => e.stopPropagation()}
-                                                className="flex-grow bg-transparent text-sm font-medium focus:outline-none p-0 text-stone-900 dark:text-slate-200 focus:ring-1 focus:ring-[var(--accent-color)] rounded"
-                                            />
-                                        ) : (
-                                            <>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium truncate">{conv.title}</p>
-                                                    <p className="text-xs text-stone-500 dark:text-slate-500 truncate">{subtitle}</p>
-                                                </div>
-                                                <div className="flex-shrink-0 flex items-center opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                                                    <button
-                                                        onClick={(e) => startEditing(e, conv)}
-                                                        className={`p-1.5 rounded-md transition-all duration-150 hover:scale-110 active:scale-95 ${isActive ? 'text-white/70 hover:text-white hover:bg-white/20' : 'text-stone-600 dark:text-slate-400 hover:text-stone-800 dark:hover:text-slate-300 hover:bg-black/10 dark:hover:bg-white/10'}`}
-                                                        aria-label={`重新命名 ${conv.title}`}
-                                                    >
-                                                        <EditIcon className="h-4 w-4" />
-                                                    </button>
-                                                    <button 
-                                                        onClick={(e) => handleDelete(e, conv.id)}
-                                                        className={`p-1.5 rounded-md transition-all duration-150 hover:scale-110 active:scale-95 ${isActive ? 'text-white/70 hover:text-red-300 hover:bg-white/20' : 'text-stone-600 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10'}`}
-                                                        aria-label={`刪除 ${conv.title}`}
-                                                    >
-                                                        <TrashIcon className="h-4 w-4" />
-                                                    </button>
-                                                </div>
-                                            </>
-                                        )}
-                                    </button>
-                                </li>
+                               <ConversationItem
+                                 key={conv.id}
+                                 conv={conv}
+                                 isActive={activeConversationId === conv.id && editingId !== conv.id}
+                                 isEditing={editingId === conv.id}
+                                 editText={editText}
+                                 setEditText={setEditText}
+                                 onSelect={handleSelect}
+                                 onStartEditing={startEditing}
+                                 onRename={handleRename}
+                                 onDelete={handleDelete}
+                                 onKeyDown={handleKeyDown}
+                                 onSetTooltip={setTooltipData}
+                                 itemRef={(node) => {
+                                     if (node) itemRefs.current.set(conv.id, node);
+                                     else itemRefs.current.delete(conv.id);
+                                 }}
+                                 inputRef={inputRef}
+                                 animationIndex={index}
+                               />
                             )
                         })}
                     </ul>
@@ -317,8 +275,9 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
             {tooltipData && (
                 <Portal>
                     <div
-                        className="fixed w-max max-w-xs p-3 bg-stone-50 dark:bg-slate-800 text-stone-800 dark:text-slate-200 text-xs rounded-lg shadow-lg z-50 border border-stone-300 dark:border-slate-700 transition-all duration-150"
+                        className="fixed w-max max-w-xs p-3 bg-stone-50 dark:bg-slate-800 text-stone-800 dark:text-slate-200 text-xs rounded-lg shadow-lg z-50 border border-stone-300 dark:border-slate-700 animate-fade-in"
                         style={{
+                            animationDuration: '150ms',
                             left: `${tooltipData.rect.right + 10}px`,
                             top: `${tooltipData.rect.top + tooltipData.rect.height / 2}px`,
                             transform: `translateY(-50%) scale(${tooltipData ? 1 : 0.95})`,
@@ -339,3 +298,86 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
         </aside>
     );
 };
+
+interface ConversationItemProps {
+    conv: Conversation;
+    isActive: boolean;
+    isEditing: boolean;
+    editText: string;
+    setEditText: (text: string) => void;
+    onSelect: (id: string) => void;
+    onStartEditing: (e: React.MouseEvent, conv: Conversation) => void;
+    onRename: (id: string) => void;
+    onDelete: (e: React.MouseEvent, id: string) => void;
+    onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>, id: string) => void;
+    onSetTooltip: (data: { conv: Conversation; rect: DOMRect } | null) => void;
+    itemRef: (node: HTMLLIElement | null) => void;
+    inputRef: React.RefObject<HTMLInputElement>;
+    animationIndex: number;
+}
+
+const ConversationItem = React.memo<ConversationItemProps>(({
+    conv, isActive, isEditing, editText, setEditText, onSelect, onStartEditing,
+    onRename, onDelete, onKeyDown, onSetTooltip, itemRef, inputRef, animationIndex
+}) => {
+    const turnCount = Math.ceil(conv.history.length / 2);                            
+    const subtitle = `${turnCount} 回合 • ${MODES[conv.mode]?.name || conv.mode}`;
+
+    return (
+        <li 
+          ref={itemRef}
+          onMouseEnter={(e) => onSetTooltip({ conv, rect: e.currentTarget.getBoundingClientRect() })}
+          onMouseLeave={() => onSetTooltip(null)}
+          className="relative group animate-fade-in-up" 
+          style={{ animationDelay: `${animationIndex * 30}ms`, opacity: 0 }}
+        >
+            <button
+                onClick={() => !isEditing && onSelect(conv.id)}
+                className={`w-full relative flex items-center gap-3 p-2 rounded-lg text-left transition-all duration-200 transform-gpu ${
+                    isActive
+                    ? 'text-white' 
+                    : isEditing
+                    ? 'bg-stone-100/80 dark:bg-slate-700/80 ring-1 ring-[var(--accent-color)]'
+                    : 'text-stone-700 dark:text-slate-400 hover:bg-stone-100/70 dark:hover:bg-slate-800/70 hover:translate-x-1'
+                }`}
+            >
+                <MessageSquareIcon className="h-5 w-5 flex-shrink-0 ml-1" />
+                {isEditing ? (
+                    <input
+                        ref={inputRef}
+                        type="text"
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                        onBlur={() => onRename(conv.id)}
+                        onKeyDown={(e) => onKeyDown(e, conv.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex-grow bg-transparent text-sm font-medium focus:outline-none p-0 text-stone-900 dark:text-slate-200 focus:ring-1 focus:ring-[var(--accent-color)] rounded"
+                    />
+                ) : (
+                    <>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{conv.title}</p>
+                            <p className="text-xs text-stone-500 dark:text-slate-500 truncate">{subtitle}</p>
+                        </div>
+                        <div className="flex-shrink-0 flex items-center opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                            <button
+                                onClick={(e) => onStartEditing(e, conv)}
+                                className={`p-1.5 rounded-md transition-all duration-150 hover:scale-110 active:scale-95 ${isActive ? 'text-white/70 hover:text-white hover:bg-white/20' : 'text-stone-600 dark:text-slate-400 hover:text-stone-800 dark:hover:text-slate-300 hover:bg-black/10 dark:hover:bg-white/10'}`}
+                                aria-label={`重新命名 ${conv.title}`}
+                            >
+                                <EditIcon className="h-4 w-4" />
+                            </button>
+                            <button 
+                                onClick={(e) => onDelete(e, conv.id)}
+                                className={`p-1.5 rounded-md transition-all duration-150 hover:scale-110 active:scale-95 ${isActive ? 'text-white/70 hover:text-red-300 hover:bg-white/20' : 'text-stone-600 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10'}`}
+                                aria-label={`刪除 ${conv.title}`}
+                            >
+                                <TrashIcon className="h-4 w-4" />
+                            </button>
+                        </div>
+                    </>
+                )}
+            </button>
+        </li>
+    );
+});

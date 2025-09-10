@@ -94,14 +94,14 @@ export const ModelMessage: React.FC<{
                                 )}
                             </button>
                         </div>
-                        <CodeBlock code={code} lang={lang} />
+                        <CodeBlock code={code} lang={lang} isStreaming={isStreaming} />
                     </div>
                 )
             }
-            // No more animation, just render the markdown part.
-            return <SafeMarkdown key={index} text={part} />;
+            // Pass streaming status to SafeMarkdown
+            return <SafeMarkdown key={index} text={part} isStreaming={isStreaming} />;
         });
-    }, [parts, copiedStates]);
+    }, [parts, copiedStates, isStreaming]);
 
     if (text.length === 0 && isStreaming) {
         return (
