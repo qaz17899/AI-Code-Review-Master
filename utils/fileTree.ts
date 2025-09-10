@@ -18,6 +18,17 @@ export interface TreeNodeData {
     children?: TreeNodeData[];
 }
 
+export type FolderSelectionState = 'all' | 'partial' | 'none';
+
+export const getFolderSelectionState = (folderPath: string, folderFileMap: Map<string, string[]>, selectedFilePaths: Set<string>): FolderSelectionState => {
+    const allFiles = folderFileMap.get(folderPath) || [];
+    if (allFiles.length === 0) return 'none';
+    const selectedCount = allFiles.filter(path => selectedFilePaths.has(path)).length;
+    if (selectedCount === 0) return 'none';
+    if (selectedCount === allFiles.length) return 'all';
+    return 'partial';
+};
+
 export const buildFileTree = (files: AppFile[]): TreeNodeData[] => {
     const root: { type: 'folder', children: { [key: string]: any } } = { type: 'folder', children: {} };
 

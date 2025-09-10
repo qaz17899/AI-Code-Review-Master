@@ -6,6 +6,57 @@ export interface UploadPayload {
   path: string;
 }
 
+// Helper function to get a File object and its path from a FileSystemFileEntry
+export function getUploadPayloadFromFileEntry(fileEntry: FileSystemFileEntry): Promise<UploadPayload> {
+  return new Promise((resolve, reject) => {
+    fileEntry.file(
+      (file) => {
+        // The fullPath property gives the relative path including parent directories.
+        // It often starts with a '/', which we remove to be consistent with webkitRelativePath.
+        const path = fileEntry.fullPath.startsWith('/') ? fileEntry.fullPath.substring(1) : fileEntry.fullPath;
+        resolve({ file, path });
+      },
+      reject
+    );
+  });
+}
+
+// Helper function to read all entries from a directory reader, handling pagination.
+function readAllEntries(dirReader: FileSystemDirectoryReader): Promise<FileSystemEntry[]> {
+    return new Promise((resolve, reject) => {
+        const allEntries: FileSystemEntry[] = [];
+        
+        const readEntriesBatch = () => {
+            dirReader.readEntries(entries => {
+                if (entries.length === 0) {
+                    resolve(allEntries);
+                    return;
+                }
+                allEntries.push(...entries);
+                readEntriesBatch(); // read the next batch
+            }, reject);
+        };
+
+        readEntriesBatch();
+    });
+}
+
+// Helper function to recursively get all files from a directory entry
+export async function getFilesFromDirectoryEntry(entry: FileSystemDirectoryEntry): Promise<UploadPayload[]> {
+    const reader = entry.createReader();
+    const entries = await readAllEntries(reader);
+
+    const payloads: UploadPayload[] = [];
+    for (const subEntry of entries) {
+        if (subEntry.isFile) {
+            payloads.push(await getUploadPayloadFromFileEntry(subEntry as FileSystemFileEntry));
+        } else if (subEntry.isDirectory) {
+            payloads.push(...await getFilesFromDirectoryEntry(subEntry as FileSystemDirectoryEntry));
+        }
+    }
+    return payloads;
+}
+
 // Reads a file and returns an AppFile object with its content and path.
 export const readFile = (payload: UploadPayload): Promise<AppFile> => {
   return new Promise((resolve, reject) => {

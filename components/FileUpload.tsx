@@ -1,69 +1,19 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { UploadIcon } from './icons';
+import { getUploadPayloadFromFileEntry, getFilesFromDirectoryEntry } from '../utils';
 
 // Interface for the payload emitted by this component
-interface UploadPayload {
+export interface UploadPayload {
   file: File;
   path: string;
 }
 
 interface FileUploadProps {
-  onFilesChange: (files: UploadPayload[]) => void;
+  onFilesChange: (payloads: UploadPayload[]) => void;
   acceptedTypes?: string[];
 }
 
 const SUPPORTED_FILE_TYPES = [".py", ".yaml", ".yml"];
-
-// Helper function to get a File object and its path from a FileSystemFileEntry
-function getUploadPayloadFromFileEntry(fileEntry: FileSystemFileEntry): Promise<UploadPayload> {
-  return new Promise((resolve, reject) => {
-    fileEntry.file(
-      (file) => {
-        // The fullPath property gives the relative path including parent directories.
-        // It often starts with a '/', which we remove to be consistent with webkitRelativePath.
-        const path = fileEntry.fullPath.startsWith('/') ? fileEntry.fullPath.substring(1) : fileEntry.fullPath;
-        resolve({ file, path });
-      },
-      reject
-    );
-  });
-}
-
-// Helper function to read all entries from a directory reader, handling pagination.
-function readAllEntries(dirReader: FileSystemDirectoryReader): Promise<FileSystemEntry[]> {
-    return new Promise((resolve, reject) => {
-        const allEntries: FileSystemEntry[] = [];
-        
-        const readEntriesBatch = () => {
-            dirReader.readEntries(entries => {
-                if (entries.length === 0) {
-                    resolve(allEntries);
-                    return;
-                }
-                allEntries.push(...entries);
-                readEntriesBatch(); // read the next batch
-            }, reject);
-        };
-
-        readEntriesBatch();
-    });
-}
-
-// Helper function to recursively get all files from a directory entry
-async function getFilesFromDirectoryEntry(entry: FileSystemDirectoryEntry): Promise<UploadPayload[]> {
-    const reader = entry.createReader();
-    const entries = await readAllEntries(reader);
-
-    const payloads: UploadPayload[] = [];
-    for (const subEntry of entries) {
-        if (subEntry.isFile) {
-            payloads.push(await getUploadPayloadFromFileEntry(subEntry as FileSystemFileEntry));
-        } else if (subEntry.isDirectory) {
-            payloads.push(...await getFilesFromDirectoryEntry(subEntry as FileSystemDirectoryEntry));
-        }
-    }
-    return payloads;
-}
 
 export const FileUpload: React.FC<FileUploadProps> = ({ onFilesChange, acceptedTypes = SUPPORTED_FILE_TYPES }) => {
   const [isDragging, setIsDragging] = useState(false);

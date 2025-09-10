@@ -10,7 +10,7 @@ import {
     TrashIcon
 } from './icons';
 import type { TreeNodeData } from '../utils/fileTree';
-import { getFileIcon } from '../utils/fileTree';
+import { getFileIcon, getFolderSelectionState } from '../utils/fileTree';
 
 interface TreeNodeProps {
     node: TreeNodeData;
@@ -25,15 +25,6 @@ interface TreeNodeProps {
     onToggleFileSelection: (path: string, isFolder: boolean) => void;
     onRemove: (path: string, isFolder: boolean) => void;
 }
-
-const getFolderSelectionState = (folderPath: string, folderFileMap: Map<string, string[]>, selectedFilePaths: Set<string>): 'all' | 'partial' | 'none' => {
-    const allFiles = folderFileMap.get(folderPath) || [];
-    if (allFiles.length === 0) return 'none';
-    const selectedCount = allFiles.filter(path => selectedFilePaths.has(path)).length;
-    if (selectedCount === 0) return 'none';
-    if (selectedCount === allFiles.length) return 'all';
-    return 'partial';
-};
 
 
 const TreeNode: React.FC<TreeNodeProps> = ({
