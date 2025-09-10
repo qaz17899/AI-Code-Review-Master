@@ -1,8 +1,10 @@
 import React, { createContext, useReducer, useContext, useEffect, ReactNode, Dispatch } from 'react';
-import type { Conversation, ConversationAction, ApiProvider } from '../types';
+import type { Conversation, ConversationAction, ApiProvider, Workspace } from '../types';
 
 interface ConversationState {
+    workspaces: Workspace[];
     conversations: Conversation[];
+    activeWorkspaceId: string | null;
     activeConversationId: string | null;
     activeConversation: Conversation | null;
     dispatch: Dispatch<ConversationAction>;
@@ -15,10 +17,39 @@ const conversationReducer = (state: Omit<ConversationState, 'dispatch' | 'active
         case 'LOAD_STATE':
             return {
                 ...state,
+                workspaces: action.payload.workspaces,
                 conversations: action.payload.conversations,
-                activeConversationId: action.payload.activeId,
+                activeWorkspaceId: action.payload.activeWorkspaceId,
+                activeConversationId: action.payload.activeConversationId,
             };
+        case 'NEW_WORKSPACE': {
+            const newWorkspace: Workspace = {
+                id: crypto.randomUUID(),
+                name: action.payload.name,
+                createdAt: Date.now(),
+            };
+            const newWorkspaces = [newWorkspace, ...state.workspaces];
+            return {
+                ...state,
+                workspaces: newWorkspaces,
+                activeWorkspaceId: newWorkspace.id,
+                activeConversationId: null, // Switch to the new workspace, no active conversation initially
+            };
+        }
+        case 'SELECT_WORKSPACE': {
+            if (state.workspaces.some(w => w.id === action.payload.id)) {
+                 const conversationsInWorkspace = state.conversations.filter(c => c.workspaceId === action.payload.id);
+                 const latestConversation = conversationsInWorkspace.sort((a,b) => b.createdAt - a.createdAt)[0];
+                return { 
+                    ...state, 
+                    activeWorkspaceId: action.payload.id,
+                    activeConversationId: latestConversation ? latestConversation.id : null,
+                };
+            }
+            return state;
+        }
         case 'NEW_CONVERSATION': {
+            if (!state.activeWorkspaceId) return state; // Cannot create conversation without a workspace
             const newConversation: Conversation = {
                 id: crypto.randomUUID(),
                 title: '新的對話',
@@ -26,6 +57,7 @@ const conversationReducer = (state: Omit<ConversationState, 'dispatch' | 'active
                 mode: 'REVIEW',
                 provider: action.payload.provider,
                 createdAt: Date.now(),
+                workspaceId: state.activeWorkspaceId,
             };
             const newConversations = [newConversation, ...state.conversations];
             return {
@@ -35,28 +67,29 @@ const conversationReducer = (state: Omit<ConversationState, 'dispatch' | 'active
             };
         }
         case 'SELECT_CONVERSATION': {
-            if (state.conversations.some(c => c.id === action.payload.id)) {
-                return { ...state, activeConversationId: action.payload.id };
+            const conv = state.conversations.find(c => c.id === action.payload.id);
+            if (conv) {
+                return { 
+                    ...state, 
+                    activeWorkspaceId: conv.workspaceId, // Also switch workspace if selecting a convo from another
+                    activeConversationId: action.payload.id 
+                };
             }
             return state;
         }
         case 'DELETE_CONVERSATION': {
+            const conversationToDelete = state.conversations.find(c => c.id === action.payload.id);
+            if (!conversationToDelete) return state;
+
             const newConversations = state.conversations.filter(c => c.id !== action.payload.id);
             let newActiveId = state.activeConversationId;
+
             if (state.activeConversationId === action.payload.id) {
-                newActiveId = newConversations.length > 0 ? newConversations[0].id : null;
-                if (!newActiveId) {
-                     const newConversation: Conversation = {
-                        id: crypto.randomUUID(),
-                        title: '新的對話',
-                        history: [],
-                        mode: 'REVIEW',
-                        provider: 'gemini', // Fallback provider
-                        createdAt: Date.now(),
-                    };
-                    newConversations.push(newConversation);
-                    newActiveId = newConversation.id;
-                }
+                // Find the latest conversation in the same workspace
+                const remainingInWorkspace = newConversations
+                    .filter(c => c.workspaceId === conversationToDelete.workspaceId)
+                    .sort((a, b) => b.createdAt - a.createdAt);
+                newActiveId = remainingInWorkspace.length > 0 ? remainingInWorkspace[0].id : null;
             }
             return {
                 ...state,
@@ -83,58 +116,104 @@ const conversationReducer = (state: Omit<ConversationState, 'dispatch' | 'active
 
 export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [state, dispatch] = useReducer(conversationReducer, {
+        workspaces: [],
         conversations: [],
+        activeWorkspaceId: null,
         activeConversationId: null,
     });
 
     // Load from localStorage on initial render
     useEffect(() => {
         try {
+            const savedWorkspaces = localStorage.getItem('workspaces');
             const savedConversations = localStorage.getItem('conversations');
-            const savedActiveId = localStorage.getItem('activeConversationId');
-            if (savedConversations) {
-                const parsedConversations: Conversation[] = JSON.parse(savedConversations);
-                const activeId = savedActiveId && parsedConversations.some(c => c.id === savedActiveId)
-                    ? savedActiveId
-                    : parsedConversations.length > 0 ? parsedConversations[0].id : null;
-                
-                dispatch({ type: 'LOAD_STATE', payload: { conversations: parsedConversations, activeId } });
-                
-                if (!activeId && parsedConversations.length === 0) {
-                    dispatch({ type: 'NEW_CONVERSATION', payload: { provider: 'gemini' } });
-                }
+            const savedActiveWorkspaceId = localStorage.getItem('activeWorkspaceId');
+            const savedActiveConversationId = localStorage.getItem('activeConversationId');
 
-            } else {
-                dispatch({ type: 'NEW_CONVERSATION', payload: { provider: 'gemini' } });
+            let workspaces: Workspace[] = savedWorkspaces ? JSON.parse(savedWorkspaces) : [];
+            let conversations: Conversation[] = savedConversations ? JSON.parse(savedConversations) : [];
+            let activeWorkspaceId = savedActiveWorkspaceId;
+            let activeConversationId = savedActiveConversationId;
+
+            // Migration logic for users from previous versions
+            if (workspaces.length === 0 && conversations.length > 0 && !conversations[0].workspaceId) {
+                console.log("Migrating old conversation data to new workspace structure...");
+                const defaultWorkspace: Workspace = {
+                    id: crypto.randomUUID(),
+                    name: "預設工作區",
+                    createdAt: Date.now()
+                };
+                workspaces = [defaultWorkspace];
+                conversations = conversations.map(c => ({ ...c, workspaceId: defaultWorkspace.id }));
+                activeWorkspaceId = defaultWorkspace.id;
             }
+
+            if (workspaces.length === 0) {
+                const defaultWorkspace: Workspace = { id: crypto.randomUUID(), name: "我的工作區", createdAt: Date.now() };
+                workspaces = [defaultWorkspace];
+                activeWorkspaceId = defaultWorkspace.id;
+                
+                const defaultConversation: Conversation = {
+                    id: crypto.randomUUID(),
+                    title: '新的對話',
+                    history: [],
+                    mode: 'REVIEW',
+                    provider: 'gemini',
+                    createdAt: Date.now(),
+                    workspaceId: defaultWorkspace.id,
+                };
+                conversations = [defaultConversation];
+                activeConversationId = defaultConversation.id;
+            }
+            
+            // Validate active IDs
+            const finalActiveWorkspaceId = workspaces.some(w => w.id === activeWorkspaceId) ? activeWorkspaceId : workspaces[0]?.id || null;
+            const finalActiveConversationId = conversations.some(c => c.id === activeConversationId && c.workspaceId === finalActiveWorkspaceId) 
+                ? activeConversationId 
+                : conversations.filter(c => c.workspaceId === finalActiveWorkspaceId).sort((a,b) => b.createdAt - a.createdAt)[0]?.id || null;
+
+            dispatch({ type: 'LOAD_STATE', payload: { 
+                workspaces, 
+                conversations, 
+                activeWorkspaceId: finalActiveWorkspaceId, 
+                activeConversationId: finalActiveConversationId 
+            }});
+
         } catch (error) {
-            console.error("Failed to load conversations from localStorage:", error);
-            dispatch({ type: 'NEW_CONVERSATION', payload: { provider: 'gemini' } });
+            console.error("Failed to load state from localStorage:", error);
+            // Initialize with a fresh state on error
+             const defaultWorkspace: Workspace = { id: crypto.randomUUID(), name: "我的工作區", createdAt: Date.now() };
+             dispatch({ type: 'LOAD_STATE', payload: { 
+                workspaces: [defaultWorkspace], 
+                conversations: [],
+                activeWorkspaceId: defaultWorkspace.id, 
+                activeConversationId: null 
+            }});
         }
     }, []);
 
     // Save to localStorage whenever state changes
     useEffect(() => {
-        if (state.conversations.length > 0) {
-            try {
-                // Sanitize conversations before saving to prevent storing large file/image data
-                const conversationsToSave = state.conversations.map(conv => ({
-                    ...conv,
-                    history: conv.history.map(msg => {
-                        // Create a new message object excluding files and images
-                        const { files, images, ...restOfMsg } = msg;
-                        return restOfMsg;
-                    })
-                }));
-                localStorage.setItem('conversations', JSON.stringify(conversationsToSave));
-            } catch (error) {
-                console.error("Failed to save conversations to localStorage, it might be full:", error);
-            }
+        if (state.workspaces.length === 0) return; // Don't save empty/initializing state
+        try {
+            // Sanitize conversations before saving
+            const conversationsToSave = state.conversations.map(conv => {
+                const { history, ...restOfConv } = conv;
+                const sanitizedHistory = history.map(msg => {
+                    const { files, images, ...restOfMsg } = msg;
+                    return restOfMsg;
+                });
+                return { ...restOfConv, history: sanitizedHistory };
+            });
+
+            localStorage.setItem('workspaces', JSON.stringify(state.workspaces));
+            localStorage.setItem('conversations', JSON.stringify(conversationsToSave));
+            if (state.activeWorkspaceId) localStorage.setItem('activeWorkspaceId', state.activeWorkspaceId);
+            if (state.activeConversationId) localStorage.setItem('activeConversationId', state.activeConversationId);
+        } catch (error) {
+            console.error("Failed to save state to localStorage:", error);
         }
-        if (state.activeConversationId) {
-            localStorage.setItem('activeConversationId', state.activeConversationId);
-        }
-    }, [state.conversations, state.activeConversationId]);
+    }, [state.workspaces, state.conversations, state.activeWorkspaceId, state.activeConversationId]);
 
     const activeConversation = state.conversations.find(c => c.id === state.activeConversationId) || null;
 

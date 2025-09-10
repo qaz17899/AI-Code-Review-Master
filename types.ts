@@ -22,6 +22,13 @@ export interface ChatMessage {
   generationTimeMs?: number;
 }
 
+export interface Workspace {
+  id: string;
+  name: string;
+  // files: AppFile[]; // Future feature: workspace-level files
+  createdAt: number;
+}
+
 export interface Conversation {
   id: string;
   title: string;
@@ -29,15 +36,18 @@ export interface Conversation {
   mode: ReviewMode;
   provider: ApiProvider;
   createdAt: number;
+  workspaceId: string;
 }
 
 export type ConversationAction =
-  | { type: 'LOAD_STATE'; payload: { conversations: Conversation[]; activeId: string | null } }
+  | { type: 'LOAD_STATE'; payload: { workspaces: Workspace[]; conversations: Conversation[]; activeWorkspaceId: string | null; activeConversationId: string | null } }
   | { type: 'NEW_CONVERSATION'; payload: { provider: ApiProvider } }
   | { type: 'SELECT_CONVERSATION'; payload: { id: string } }
   | { type: 'DELETE_CONVERSATION'; payload: { id: string } }
   | { type: 'RENAME_CONVERSATION'; payload: { id:string; title: string } }
-  | { type: 'UPDATE_CONVERSATION'; payload: { conversation: Conversation } };
+  | { type: 'UPDATE_CONVERSATION'; payload: { conversation: Conversation } }
+  | { type: 'NEW_WORKSPACE'; payload: { name: string } }
+  | { type: 'SELECT_WORKSPACE'; payload: { id: string } };
 
 export interface ApiSettings {
     geminiApiKey: string;
