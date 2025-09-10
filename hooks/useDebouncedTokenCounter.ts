@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { ApiProvider, AppFile, ApiSettings } from '../types';
-import { countInputTokens } from '../services/aiService';
+import { countInputTokens as countGeminiInputTokens } from '../services/geminiService';
+import { countInputTokens as countOpenAIInputTokens } from '../services/openaiService';
 
 export const useDebouncedTokenCounter = (
     provider: ApiProvider,
@@ -24,7 +25,9 @@ export const useDebouncedTokenCounter = (
         const handler = setTimeout(async () => {
             setIsCountingTokens(true);
             try {
-                const count = await countInputTokens(provider, files, userMessage, images, settings);
+                const count = provider === 'gemini'
+                    ? await countGeminiInputTokens(files, userMessage, images, settings)
+                    : await countOpenAIInputTokens(files, userMessage, images);
                 setInputTokenCount(count);
             } catch (error) {
                 console.error("Error counting tokens:", error);

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { RefreshIcon, SpinnerIcon } from './icons';
-import { listModels } from '../services/aiService';
+import { listModels as listGeminiModels } from '../services/geminiService';
+import { listModels as listOpenAIModels } from '../services/openaiService';
 import type { ApiProvider, ApiSettings } from '../types';
 
 interface ModelSelectorInputProps {
@@ -22,7 +23,9 @@ export const ModelSelectorInput: React.FC<ModelSelectorInputProps> = ({ id, labe
         setError(null);
         setModels([]);
         try {
-            const fetchedModels = await listModels(provider, settings);
+            const fetchedModels = provider === 'gemini' 
+                ? await listGeminiModels(settings) 
+                : await listOpenAIModels(settings);
             setModels(fetchedModels);
         } catch (err) {
             const message = err instanceof Error ? err.message : "An unknown error occurred.";

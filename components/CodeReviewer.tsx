@@ -1,10 +1,10 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { ResultDisplay } from './ResultDisplay';
-import { generateChatStream, countResponseTokens, countInputTokens } from '../services/aiService';
-import { scopeRelevantFiles } from '../services/geminiService';
+import { generateGeminiChatStream, countResponseTokens as countGeminiResponseTokens, countInputTokens as countGeminiInputTokens, scopeRelevantFiles } from '../services/geminiService';
+import { generateOpenAIChatStream, countResponseTokens as countOpenAIResponseTokens, countInputTokens as countOpenAIInputTokens } from '../services/openaiService';
 import { DIFF_INSTRUCTION, ALL_SUPPORTED_TYPES } from './constants';
 import type { ReviewMode, ChatMessage, AppFile, Conversation } from '../types';
-import { StarIcon, MasterIcon } from './icons';
+import { StarIcon } from './icons';
 import { useConversation } from '../contexts/ConversationContext';
 import { ModeSelectorGrid } from './ModeSelectorGrid';
 import { FileManagementArea } from './FileManagementArea';
@@ -41,6 +41,16 @@ export const CodeReviewer: React.FC = () => {
   const conversation = activeConversation;
   const mode = conversation?.mode || 'REVIEW';
   const provider = conversation?.provider || 'gemini';
+
+  // Define service functions based on provider
+  const { generateChatStream, countInputTokens, countResponseTokens } = useMemo(() => {
+    if (provider === 'openai') {
+      return { generateChatStream: generateOpenAIChatStream, countInputTokens: countOpenAIInputTokens, countResponseTokens: countOpenAIResponseTokens };
+    }
+    // Default to gemini
+    return { generateChatStream: generateGeminiChatStream, countInputTokens: countGeminiInputTokens, countResponseTokens: countGeminiResponseTokens };
+  }, [provider]);
+
 
   const filesToCount = useMemo(() => files.filter(f => selectedFilePaths.has(f.path)), [files, selectedFilePaths]);
   const [inputTokenCount, isCountingTokens] = useDebouncedTokenCounter(provider, filesToCount, userMessage, pastedImages, settings);
@@ -130,7 +140,7 @@ export const CodeReviewer: React.FC = () => {
         
         let responseTokens = 0;
         try {
-            responseTokens = await countResponseTokens(provider, finalContent, settings);
+            responseTokens = await countResponseTokens(finalContent, settings);
         } catch (e) {
             console.error("Failed to count response tokens:", e);
         }
@@ -157,8 +167,65 @@ export const CodeReviewer: React.FC = () => {
         };
         onUpdateConversation(finalConversation);
     
-    }, [onUpdateConversation, provider, settings]);
+    }, [onUpdateConversation, settings, countResponseTokens]);
 
+  const executeChatGeneration = useCallback(async (
+    historyForAPI: ChatMessage[],
+    filesToSubmit: AppFile[],
+    messageToSend: string,
+    imagesToSend: string[],
+    conversationForStreaming: Conversation
+  ) => {
+    if (!conversation) return;
+
+    // If another request is running for another conversation, do not start
+    if (isSubmitting && submittingConversationId !== conversation.id) {
+        console.warn("Another submission is already in progress for a different conversation.");
+        // Revert optimistic UI update if we don't proceed
+        onUpdateConversation({ ...conversationForStreaming, history: historyForAPI });
+        return;
+    }
+
+    abortControllerRef.current = new AbortController();
+    setSubmittingConversationId(conversation.id);
+    setError('');
+
+    const startTime = performance.now();
+    try {
+        const masterPromptTemplate = MODES[mode].prompt;
+        const masterPrompt = settings.forceDiff ? `${masterPromptTemplate}\n\n${DIFF_INSTRUCTION}` : masterPromptTemplate;
+        const promptTokenCount = await countInputTokens(filesToSubmit, messageToSend, imagesToSend, settings);
+        const signal = abortControllerRef.current.signal;
+
+        // FIX: The `generateChatStream` function expects 7 distinct arguments, but was being called with a single object.
+        // This change unpacks the object into the correct argument list, resolving the "Expected 7 arguments, but got 1" error.
+        const stream = await generateChatStream(
+            historyForAPI,
+            filesToSubmit,
+            messageToSend,
+            imagesToSend,
+            masterPrompt,
+            signal,
+            settings
+        );
+        
+        await handleStreamingResponse(stream, conversationForStreaming, promptTokenCount, startTime);
+
+    } catch (err) {
+        console.error("Error during chat generation:", err);
+        const errorMessage = err instanceof Error ? err.message : '與 AI 通訊時發生錯誤';
+        if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
+            setError(errorMessage);
+            const currentHistory = [...conversationForStreaming.history];
+            currentHistory[currentHistory.length - 1] = { role: 'model', content: `發生錯誤: ${errorMessage}` };
+            onUpdateConversation({ ...conversationForStreaming, history: currentHistory });
+        }
+    } finally {
+       abortControllerRef.current = null;
+       setSubmittingConversationId(null);
+    }
+  }, [conversation, isSubmitting, submittingConversationId, onUpdateConversation, mode, settings, handleStreamingResponse, generateChatStream, countInputTokens]);
+    
   const handleSubmit = async (isFollowUp: boolean, followUpPayload?: { files: AppFile[], message: string, images: string[] }) => {
     const filesToSubmit = isFollowUp ? followUpPayload!.files : files.filter(f => selectedFilePaths.has(f.path));
     const messageToSend = isFollowUp ? followUpPayload!.message : userMessage;
@@ -197,62 +264,6 @@ export const CodeReviewer: React.FC = () => {
       updatedConversation
     );
   };
-
-  const executeChatGeneration = async (
-    historyForAPI: ChatMessage[],
-    filesToSubmit: AppFile[],
-    messageToSend: string,
-    imagesToSend: string[],
-    conversationForStreaming: Conversation
-  ) => {
-    if (!conversation) return;
-
-    // If another request is running for another conversation, do not start
-    if (isSubmitting && submittingConversationId !== conversation.id) {
-        console.warn("Another submission is already in progress for a different conversation.");
-        // Revert optimistic UI update if we don't proceed
-        onUpdateConversation({ ...conversationForStreaming, history: historyForAPI });
-        return;
-    }
-
-    abortControllerRef.current = new AbortController();
-    setSubmittingConversationId(conversation.id);
-    setError('');
-
-    const startTime = performance.now();
-    try {
-        const masterPromptTemplate = MODES[mode].prompt;
-        const masterPrompt = settings.forceDiff ? `${masterPromptTemplate}\n\n${DIFF_INSTRUCTION}` : masterPromptTemplate;
-        const promptTokenCount = await countInputTokens(provider, filesToSubmit, messageToSend, imagesToSend, settings);
-        const signal = abortControllerRef.current.signal;
-
-        const stream = await generateChatStream({
-            provider,
-            history: historyForAPI,
-            files: filesToSubmit,
-            userMessage: messageToSend,
-            signal,
-            images: imagesToSend,
-            masterPrompt,
-            settings
-        });
-        
-        await handleStreamingResponse(stream, conversationForStreaming, promptTokenCount, startTime);
-
-    } catch (err) {
-        console.error("Error during chat generation:", err);
-        const errorMessage = err instanceof Error ? err.message : '與 AI 通訊時發生錯誤';
-        if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
-            setError(errorMessage);
-            const currentHistory = [...conversationForStreaming.history];
-            currentHistory[currentHistory.length - 1] = { role: 'model', content: `發生錯誤: ${errorMessage}` };
-            onUpdateConversation({ ...conversationForStreaming, history: currentHistory });
-        }
-    } finally {
-       abortControllerRef.current = null;
-       setSubmittingConversationId(null);
-    }
-  }
 
   const onFollowUp = async (followUpFiles: AppFile[], message: string, images: string[]) => {
     await handleSubmit(true, { files: followUpFiles, message, images });
@@ -335,10 +346,10 @@ export const CodeReviewer: React.FC = () => {
         imagesToSend,
         updatedConversation
     );
-  }, [conversation, provider, mode, settings, onUpdateConversation, handleStreamingResponse]);
+  }, [conversation, onUpdateConversation, executeChatGeneration]);
   
     const handleAiScoping = async () => {
-        if (files.length === 0) return;
+        if (files.length === 0 || provider !== 'gemini') return;
         setIsScoping(true);
         setError('');
         try {
@@ -427,7 +438,7 @@ export const CodeReviewer: React.FC = () => {
             recommendedPaths={recommendedPaths}
             setRecommendedPaths={setRecommendedPaths}
             isScoping={isScoping}
-            onAiScoping={handleAiScoping}
+            onAiScoping={provider === 'gemini' ? handleAiScoping : undefined}
             userMessage={userMessage}
             setError={setError}
         />

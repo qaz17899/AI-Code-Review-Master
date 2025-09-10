@@ -7,7 +7,7 @@ import { FileUpload } from './FileUpload';
 import { FileTypeManager } from './FileTypeManager';
 import { ScopingLoader } from './ScopingLoader';
 import { SearchIcon, XIcon, CheckIcon, StarIcon } from './icons';
-import { readFile, unzipFile, type UploadPayload } from '../utils';
+import { processUploadedFiles, type UploadPayload } from '../utils';
 
 interface FileManagementAreaProps {
     files: AppFile[];
@@ -71,27 +71,11 @@ export const FileManagementArea: React.FC<FileManagementAreaProps> = (props) => 
 
     const handleFilesChange = useCallback(async (payloads: UploadPayload[]) => {
         try {
-            const processedPayloads: UploadPayload[] = [];
-            
-            for (const payload of payloads) {
-                if (payload.file.name.toLowerCase().endsWith('.zip')) {
-                    try {
-                        const unzippedPayloads = await unzipFile(payload.file);
-                        processedPayloads.push(...unzippedPayloads);
-                    } catch (e) {
-                        console.error(`Failed to unzip file ${payload.file.name}:`, e);
-                        props.setError(`解壓縮檔案 ${payload.file.name} 失敗。`);
-                    }
-                } else {
-                    processedPayloads.push(payload);
-                }
+            const newFiles = await processUploadedFiles(payloads, acceptedTypes, props.setError);
+            if (newFiles.length === 0 && payloads.length > 0) {
+                // This can happen if all uploaded files were filtered out.
+                return;
             }
-
-            const filteredPayloads = processedPayloads.filter(p => 
-                acceptedTypes.some(type => p.path.toLowerCase().endsWith(type)) && !p.path.toLowerCase().endsWith('.zip')
-            );
-          
-            const newFiles = await Promise.all(filteredPayloads.map(readFile));
 
             setFiles(prevFiles => {
                 const existingFilePaths = new Set(prevFiles.map(f => f.path));
