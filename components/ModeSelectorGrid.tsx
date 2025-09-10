@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { ReviewMode } from '../types';
 import { getModeIcon } from './ModeIcons';
 import { InfoIcon } from './icons';
@@ -87,9 +87,25 @@ export const ModeSelectorGrid: React.FC<{
         return findCategoryForMode(currentMode)?.title || MODE_CATEGORIES[0].title;
     });
     
-    const [indicatorStyle, setIndicatorStyle] = useState({});
+    const [indicatorStyle, setIndicatorStyle] = useState<React.CSSProperties>({});
     const tabsRef = useRef<HTMLDivElement>(null);
     const tabItemRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+
+    const updateIndicatorPosition = useCallback(() => {
+        const activeTabNode = tabItemRefs.current.get(activeCategory);
+        const tabsContainerNode = tabsRef.current;
+
+        if (activeTabNode && tabsContainerNode) {
+            const containerRect = tabsContainerNode.getBoundingClientRect();
+            const tabRect = activeTabNode.getBoundingClientRect();
+            setIndicatorStyle({
+                left: `${tabRect.left - containerRect.left}px`,
+                top: `${tabRect.top - containerRect.top}px`,
+                width: `${tabRect.width}px`,
+                height: `${tabRect.height}px`,
+            });
+        }
+    }, [activeCategory]);
 
     useEffect(() => {
         const category = findCategoryForMode(currentMode);
@@ -99,21 +115,12 @@ export const ModeSelectorGrid: React.FC<{
     }, [currentMode]);
 
     useEffect(() => {
-        const activeTabNode = tabItemRefs.current.get(activeCategory);
-        const tabsContainerNode = tabsRef.current;
-
-        if (activeTabNode && tabsContainerNode) {
-            const containerRect = tabsContainerNode.getBoundingClientRect();
-            const tabRect = activeTabNode.getBoundingClientRect();
-
-            setIndicatorStyle({
-                left: `${tabRect.left - containerRect.left}px`,
-                top: `${tabRect.top - containerRect.top}px`,
-                width: `${tabRect.width}px`,
-                height: `${tabRect.height}px`,
-            });
-        }
-    }, [activeCategory]);
+        updateIndicatorPosition();
+        window.addEventListener('resize', updateIndicatorPosition);
+        return () => {
+            window.removeEventListener('resize', updateIndicatorPosition);
+        };
+    }, [updateIndicatorPosition]);
 
     const activeCategoryData = MODE_CATEGORIES.find(cat => cat.title === activeCategory);
 
