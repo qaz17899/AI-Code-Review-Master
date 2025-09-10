@@ -11,87 +11,18 @@ interface ConversationSidebarProps {
     isOpen: boolean;
 }
 
-const WorkspaceDropdown: React.FC<{
-    onClose: () => void;
-    triggerRect: DOMRect | null;
-}> = ({ onClose, triggerRect }) => {
-    const { workspaces, activeWorkspaceId, dispatch } = useConversation();
-    const [newWorkspaceName, setNewWorkspaceName] = useState('');
-    const dropdownRef = useRef<HTMLDivElement>(null);
-
-    const handleAddWorkspace = (e: FormEvent) => {
-        e.preventDefault();
-        if (newWorkspaceName.trim()) {
-            dispatch({ type: 'NEW_WORKSPACE', payload: { name: newWorkspaceName.trim() } });
-            setNewWorkspaceName('');
-            onClose();
-        }
-    };
-
-    // Close on click outside
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                onClose();
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [onClose]);
-
-    if (!triggerRect) return null;
-
-    const style: React.CSSProperties = {
-        position: 'fixed',
-        top: `${triggerRect.top}px`,
-        left: `${triggerRect.right + 8}px`,
-    };
-
-    return (
-        <Portal>
-            <div
-                ref={dropdownRef}
-                style={style}
-                className="z-30 w-64 p-2 bg-stone-100/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-lg shadow-2xl border border-stone-300 dark:border-slate-700/80 animate-fade-in glass-noise"
-            >
-                <div className="space-y-1">
-                    {workspaces.map(ws => (
-                         <button key={ws.id} onClick={() => dispatch({ type: 'SELECT_WORKSPACE', payload: { id: ws.id } })} className={`w-full text-left p-2 text-sm rounded transition-colors ${ws.id === activeWorkspaceId ? 'bg-[var(--accent-color)]/20 text-[var(--accent-color)] font-bold' : 'hover:bg-stone-200/80 dark:hover:bg-slate-800/80'}`}>
-                            {ws.name}
-                        </button>
-                    ))}
-                </div>
-                <div className="border-t border-stone-300 dark:border-slate-700/60 my-2"></div>
-                <form onSubmit={handleAddWorkspace} className="flex items-center gap-2">
-                    <input
-                        type="text"
-                        value={newWorkspaceName}
-                        onChange={(e) => setNewWorkspaceName(e.target.value)}
-                        placeholder="新的工作區名稱..."
-                        className="flex-grow bg-stone-50/50 dark:bg-slate-800/50 border border-stone-400 dark:border-slate-700 rounded-md px-2 py-1 text-sm focus:ring-1 focus:ring-[var(--accent-color)] focus:border-[var(--accent-color)] outline-none transition"
-                    />
-                    <button type="submit" className="p-1.5 rounded-md text-stone-600 dark:text-slate-300 bg-stone-200 hover:bg-stone-300 dark:bg-slate-700 dark:hover:bg-slate-600 transition-colors" aria-label="新增工作區">
-                        <PlusIcon className="h-4 w-4" />
-                    </button>
-                </form>
-            </div>
-        </Portal>
-    );
-};
-
-
 export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
     isOpen,
 }) => {
     const { workspaces, conversations, activeWorkspaceId, activeConversationId, dispatch } = useConversation();
     const { settings } = useApiSettings();
+    const [newWorkspaceName, setNewWorkspaceName] = useState('');
     const [editingId, setEditingId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [editText, setEditText] = useState('');
     const [indicatorStyle, setIndicatorStyle] = useState({});
     const [tooltipData, setTooltipData] = useState<{ conv: Conversation; rect: DOMRect } | null>(null);
     const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
-    const [workspaceButtonRect, setWorkspaceButtonRect] = useState<DOMRect | null>(null);
 
     const inputRef = useRef<HTMLInputElement>(null);
     const listRef = useRef<HTMLUListElement>(null);
@@ -151,10 +82,27 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
     const handleNew = () => {
         dispatch({ type: 'NEW_CONVERSATION', payload: { provider: settings.defaultProvider } });
     }
-
+    
     const handleSelect = (id: string) => {
         dispatch({ type: 'SELECT_CONVERSATION', payload: { id } });
     }
+
+    const handleAddWorkspace = (e: FormEvent) => {
+        e.preventDefault();
+        if (newWorkspaceName.trim()) {
+            dispatch({ type: 'NEW_WORKSPACE', payload: { name: newWorkspaceName.trim() } });
+            setNewWorkspaceName('');
+            setIsWorkspaceOpen(false); // Close after adding
+        }
+    };
+
+    const handleDeleteWorkspace = (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        if (window.confirm(`確定要刪除這個工作區嗎？所有相關的對話都將被一併刪除。`)) {
+            dispatch({ type: 'DELETE_WORKSPACE', payload: { id } });
+            setIsWorkspaceOpen(false); // Close after deleting
+        }
+    };
 
     const conversationsForCurrentWorkspace = useMemo(() => {
         return conversations
@@ -168,16 +116,44 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
 
     return (
         <aside className={`flex-shrink-0 bg-stone-100/75 dark:bg-slate-900/75 backdrop-blur-xl border-r border-stone-300 dark:border-slate-800/50 flex flex-col transition-all duration-300 ease-in-out dark:ring-1 dark:ring-inset dark:ring-white/10 ${isOpen ? 'w-64' : 'w-0'}`}>
-            <div className={`p-2 border-b border-stone-300 dark:border-slate-800/50 transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
-                <div className="relative px-2 -mx-2">
-                    <button ref={workspaceButtonRef} onClick={() => { setWorkspaceButtonRect(workspaceButtonRef.current?.getBoundingClientRect() || null); setIsWorkspaceOpen(!isWorkspaceOpen); }} className="w-full flex items-center justify-between p-2 rounded-lg bg-stone-50/50 dark:bg-slate-800/50 hover:bg-stone-100 dark:hover:bg-slate-800/80 border border-stone-400 dark:border-slate-700 transition-colors">
+            <div className={`p-2 border-b border-stone-300 dark:border-slate-800/50 transition-opacity duration-200 flex flex-col ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
+                <div className="relative">
+                    <button ref={workspaceButtonRef} onClick={() => setIsWorkspaceOpen(!isWorkspaceOpen) } className="w-full flex items-center justify-between p-2 rounded-lg bg-stone-50/50 dark:bg-slate-800/50 hover:bg-stone-100 dark:hover:bg-slate-800/80 border border-stone-400 dark:border-slate-700 transition-colors">
                         <div className="flex items-center gap-2 min-w-0">
                             <FolderIcon className="h-5 w-5 text-stone-600 dark:text-slate-400 flex-shrink-0" />
                             <span className="font-semibold text-sm text-stone-800 dark:text-slate-200 truncate">{activeWorkspace?.name || '...'}</span>
                         </div>
                         <ChevronDownIcon className={`h-4 w-4 text-stone-500 dark:text-slate-500 transition-transform ${isWorkspaceOpen ? 'rotate-180' : ''}`} />
                     </button>
-                    {isWorkspaceOpen && <WorkspaceDropdown onClose={() => setIsWorkspaceOpen(false)} triggerRect={workspaceButtonRect} />}
+                    <div className={`grid transition-all duration-300 ease-in-out ${isWorkspaceOpen ? 'grid-rows-[1fr] pt-2' : 'grid-rows-[0fr] pt-0'}`}>
+                        <div className="overflow-hidden bg-stone-200/50 dark:bg-slate-800/50 rounded-lg p-2 space-y-1 border border-stone-300 dark:border-slate-700/60">
+                            {workspaces.map(ws => (
+                                <div key={ws.id} className="group flex items-center justify-between w-full rounded">
+                                    <button onClick={() => dispatch({ type: 'SELECT_WORKSPACE', payload: { id: ws.id } })} className={`flex-grow text-left p-2 text-sm rounded-l transition-colors ${ws.id === activeWorkspaceId ? 'bg-[var(--accent-color)]/20 text-[var(--accent-color)] font-bold' : 'hover:bg-stone-300/80 dark:hover:bg-slate-700/80'}`}>
+                                        {ws.name}
+                                    </button>
+                                    {workspaces.length > 1 && (
+                                        <button onClick={(e) => handleDeleteWorkspace(e, ws.id)} className={`p-2 rounded-r transition-colors opacity-0 group-hover:opacity-100 ${ws.id === activeWorkspaceId ? 'bg-[var(--accent-color)]/20 hover:bg-red-500/20' : 'hover:bg-red-500/10'}`}>
+                                            <TrashIcon className="h-4 w-4 text-stone-500 dark:text-slate-400 group-hover:text-red-500 dark:group-hover:text-red-400" />
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                            <div className="border-t border-stone-300 dark:border-slate-700/60 my-2"></div>
+                            <form onSubmit={handleAddWorkspace} className="flex items-center gap-2">
+                                <input
+                                    type="text"
+                                    value={newWorkspaceName}
+                                    onChange={(e) => setNewWorkspaceName(e.target.value)}
+                                    placeholder="新的工作區名稱..."
+                                    className="flex-grow bg-stone-50/50 dark:bg-slate-800/50 border border-stone-400 dark:border-slate-700 rounded-md px-2 py-1 text-sm focus:ring-1 focus:ring-[var(--accent-color)] focus:border-[var(--accent-color)] outline-none transition"
+                                />
+                                <button type="submit" className="p-1.5 rounded-md text-stone-600 dark:text-slate-300 bg-stone-200 hover:bg-stone-300 dark:bg-slate-700 dark:hover:bg-slate-600 transition-colors" aria-label="新增工作區">
+                                    <PlusIcon className="h-4 w-4" />
+                                </button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div className={`w-full flex flex-col h-full transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>

@@ -47,7 +47,8 @@ export type ConversationAction =
   | { type: 'RENAME_CONVERSATION'; payload: { id:string; title: string } }
   | { type: 'UPDATE_CONVERSATION'; payload: { conversation: Conversation } }
   | { type: 'NEW_WORKSPACE'; payload: { name: string } }
-  | { type: 'SELECT_WORKSPACE'; payload: { id: string } };
+  | { type: 'SELECT_WORKSPACE'; payload: { id: string } }
+  | { type: 'DELETE_WORKSPACE'; payload: { id: string } };
 
 export interface ApiSettings {
     geminiApiKey: string;

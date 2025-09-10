@@ -36,6 +36,32 @@ const conversationReducer = (state: Omit<ConversationState, 'dispatch' | 'active
                 activeConversationId: null, // Switch to the new workspace, no active conversation initially
             };
         }
+        case 'DELETE_WORKSPACE': {
+            const workspaceIdToDelete = action.payload.id;
+            if (state.workspaces.length <= 1) return state; // Don't delete the last workspace
+
+            const newWorkspaces = state.workspaces.filter(w => w.id !== workspaceIdToDelete);
+            const newConversations = state.conversations.filter(c => c.workspaceId !== workspaceIdToDelete);
+
+            let newActiveWorkspaceId = state.activeWorkspaceId;
+            let newActiveConversationId: string | null = state.activeConversationId;
+
+            if (state.activeWorkspaceId === workspaceIdToDelete) {
+                newActiveWorkspaceId = newWorkspaces[0]?.id || null;
+                const conversationsInNewWorkspace = newConversations
+                    .filter(c => c.workspaceId === newActiveWorkspaceId)
+                    .sort((a, b) => b.createdAt - a.createdAt);
+                newActiveConversationId = conversationsInNewWorkspace[0]?.id || null;
+            }
+            
+            return {
+                ...state,
+                workspaces: newWorkspaces,
+                conversations: newConversations,
+                activeWorkspaceId: newActiveWorkspaceId,
+                activeConversationId: newActiveConversationId,
+            };
+        }
         case 'SELECT_WORKSPACE': {
             if (state.workspaces.some(w => w.id === action.payload.id)) {
                  const conversationsInWorkspace = state.conversations.filter(c => c.workspaceId === action.payload.id);
