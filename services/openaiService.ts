@@ -27,7 +27,9 @@ export const listModels = async (settings: ApiSettings): Promise<string[]> => {
 };
 
 export const countResponseTokens = async (
-    text: string
+    text: string,
+    // settings is unused but included for interface consistency with geminiService
+    settings: ApiSettings
 ): Promise<number> => {
     // OpenAI token counting on the client is complex without a library like tiktoken.
     // We'll use a rough estimation (4 chars ~ 1 token).
@@ -37,7 +39,9 @@ export const countResponseTokens = async (
 export const countInputTokens = async (
     files: AppFile[],
     userMessage: string,
-    images: string[]
+    images: string[],
+    // settings is unused but included for interface consistency with geminiService
+    settings: ApiSettings
 ): Promise<number> => {
     // This is a rough estimation. For accurate counting, a client-side tokenizer like tiktoken is needed.
     const fileText = files.map(f => f.content).join('\n');

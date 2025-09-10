@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { ResultDisplay } from './ResultDisplay';
 import { generateChatStream, countInputTokens, countResponseTokens } from '../services/aiService';
-import { scopeRelevantFiles as scopeGeminiRelevantFiles } from '../services/geminiService';
+import { scopeRelevantFiles } from '../services/geminiService';
 import { DIFF_INSTRUCTION, ALL_SUPPORTED_TYPES } from './constants';
 import type { ReviewMode, ChatMessage, AppFile, Conversation } from '../types';
 import { StarIcon } from './icons';
@@ -342,8 +342,8 @@ export const CodeReviewer: React.FC = () => {
         setIsScoping(true);
         setError('');
         try {
-          const defaultMessage = MODES[mode]?.ui?.placeholder || "請對我上傳的檔案進行一次全面的程式碼審查。";
-          let recommended = await scopeGeminiRelevantFiles(files, userMessage.trim() || defaultMessage, settings);
+          const defaultMessage = MODES[mode]?.ui.placeholder || "請對我上傳的檔案進行一次全面的程式碼審查。";
+          let recommended = await scopeRelevantFiles(files, userMessage.trim() || defaultMessage, settings);
           if (recommended.length === 0 && files.length > 0) {
             recommended = files.map(f => f.path);
           }

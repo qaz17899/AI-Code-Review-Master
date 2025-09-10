@@ -1,9 +1,10 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { PaperclipIcon, SendIcon, XIcon, TokenIcon } from './icons';
+import { PaperclipIcon, SendIcon, XIcon } from './icons';
 import type { AppFile, ApiSettings } from '../types';
 import { countInputTokens } from '../services/aiService';
 import { processUploadedFiles, handleImagePaste, type UploadPayload } from '../utils';
 import { getFileIcon } from '../utils/fileTree';
+import { TokenDisplay } from './TokenDisplay';
 import { useDebouncedTokenCounter } from '../hooks/useDebouncedTokenCounter';
 import { ALL_SUPPORTED_TYPES } from './constants';
 
@@ -118,14 +119,7 @@ export const FollowUpForm: React.FC<{
                     </button>
                     <textarea ref={textareaRef} className="w-full bg-transparent text-stone-900 dark:text-slate-200 placeholder-stone-500 dark:placeholder-slate-500 focus:outline-none resize-none max-h-40 custom-scrollbar focus:ring-2 focus:ring-[var(--accent-color)] rounded-md py-1" rows={1} placeholder="補充說明、貼上圖片或提出具體問題..." value={message} onChange={(e) => setMessage(e.target.value)} onPaste={onPaste} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(e); } }} />
                     <div className="flex-shrink-0 text-xs text-stone-500 dark:text-slate-500 flex items-center gap-1.5">
-                        {isCountingTokens ? (
-                             <div className="animate-spin h-3 w-3 border-2 border-stone-500 border-t-transparent rounded-full"></div>
-                        ) : inputTokenCount !== null ? (
-                            <div key={inputTokenCount} className="flex items-center gap-1.5 animate-fade-in" style={{ animationDuration: '300ms' }}>
-                                <TokenIcon className="h-3 w-3" />
-                                <span>{inputTokenCount.toLocaleString()} Tokens</span>
-                            </div>
-                        ) : null}
+                        <TokenDisplay isCounting={isCountingTokens} tokenCount={inputTokenCount} />
                     </div>
                     <button type="submit" disabled={isSubmitting || (files.length === 0 && !message.trim() && pastedImages.length === 0)} className="relative overflow-hidden p-2 accent-gradient-bg text-white font-bold rounded-lg transition-all transform hover:scale-110 disabled:from-stone-400 dark:disabled:from-slate-700 disabled:to-stone-300 dark:disabled:to-slate-600 disabled:text-stone-600 dark:disabled:text-slate-400 disabled:cursor-not-allowed disabled:transform-none flex-shrink-0 before:absolute before:inset-0 before:bg-white/20 dark:before:bg-black/20 before:transition-opacity before:opacity-0 hover:before:opacity-100 before:duration-300 before:ease-in-out before:rounded-lg" aria-label="追問大師">
                         <SendIcon className="h-6 w-6 relative z-10" />

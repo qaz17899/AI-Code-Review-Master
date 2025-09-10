@@ -34,7 +34,7 @@ export const countResponseTokens = async (
     if (provider === 'gemini') {
         return countGeminiResponseTokens(text, settings);
     } else if (provider === 'openai') {
-        return countOpenAIResponseTokens(text);
+        return countOpenAIResponseTokens(text, settings);
     }
     throw new Error(`Unsupported AI provider for token counting: ${provider}`);
 };
@@ -49,7 +49,7 @@ export const countInputTokens = async (
     if (provider === 'gemini') {
         return countGeminiInputTokens(files, userMessage, images, settings);
     } else if (provider === 'openai') {
-        return countOpenAIInputTokens(files, userMessage, images);
+        return countOpenAIInputTokens(files, userMessage, images, settings);
     }
     throw new Error(`Unsupported AI provider for input token counting: ${provider}`);
 };
