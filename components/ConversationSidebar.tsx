@@ -24,7 +24,6 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
     const [indicatorStyle, setIndicatorStyle] = useState({});
     const [tooltipData, setTooltipData] = useState<{ conv: Conversation; rect: DOMRect } | null>(null);
     const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
-    const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
 
     const inputRef = useRef<HTMLInputElement>(null);
     const listRef = useRef<HTMLUListElement>(null);
@@ -53,11 +52,10 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
         }
     }, [activeConversationId, conversations, isOpen, searchQuery]); // Added searchQuery dependency
 
-    // Reset adding/confirmation state when dropdown closes
+    // Reset adding state when dropdown closes
     useEffect(() => {
         if (!isWorkspaceOpen) {
             setIsAddingWorkspace(false);
-            setConfirmingDeleteId(null);
         }
     }, [isWorkspaceOpen]);
 
@@ -107,6 +105,14 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
         }
     };
 
+    const handleDeleteWorkspace = (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        if (window.confirm(`確定要刪除這個工作區嗎？所有相關的對話都將被一併刪除。`)) {
+            dispatch({ type: 'DELETE_WORKSPACE', payload: { id } });
+            setIsWorkspaceOpen(false); // Close after deleting
+        }
+    };
+
     const conversationsForCurrentWorkspace = useMemo(() => {
         return conversations
             .filter(conv => conv.workspaceId === activeWorkspaceId)
@@ -128,53 +134,19 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                         </div>
                         <ChevronDownIcon className={`h-4 w-4 text-stone-500 dark:text-slate-500 transition-transform ${isWorkspaceOpen ? 'rotate-180' : ''}`} />
                     </button>
-                    <div className={`grid transition-all duration-300 ease-in-out ${isWorkspaceOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
-                        <div className={`overflow-hidden transition-all duration-300 ${isWorkspaceOpen ? 'mt-2' : 'mt-0'}`}>
-                        <div className="bg-stone-200/50 dark:bg-slate-800/50 rounded-lg p-2 space-y-1 border border-stone-300 dark:border-slate-700/60">
+                    <div className={`grid transition-all duration-300 ease-in-out ${isWorkspaceOpen ? 'grid-rows-[1fr] pt-2' : 'grid-rows-[0fr] pt-0'}`}>
+                        <div className="overflow-hidden bg-stone-200/50 dark:bg-slate-800/50 rounded-lg p-2 space-y-1 border border-stone-300 dark:border-slate-700/60">
                             {workspaces.map(ws => (
-                                confirmingDeleteId === ws.id ? (
-                                    <div key={ws.id} className="flex items-center justify-between w-full p-1.5 rounded bg-red-500/10 text-red-600 dark:text-red-400 animate-fade-in" style={{ animationDuration: '200ms' }}>
-                                        <span className="text-xs font-semibold px-1">確定要刪除嗎？</span>
-                                        <div className="flex items-center gap-1.5">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    dispatch({ type: 'DELETE_WORKSPACE', payload: { id: ws.id } });
-                                                    setIsWorkspaceOpen(false);
-                                                }}
-                                                className="px-2 py-0.5 text-xs font-bold text-white bg-red-500 rounded hover:bg-red-600 transition-colors"
-                                            >
-                                                是
-                                            </button>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setConfirmingDeleteId(null);
-                                                }}
-                                                className="px-2 py-0.5 text-xs font-semibold text-stone-700 dark:text-slate-300 bg-stone-300 dark:bg-slate-600 rounded hover:bg-stone-400 dark:hover:bg-slate-500 transition-colors"
-                                            >
-                                                否
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : (
                                 <div key={ws.id} className="group flex items-center justify-between w-full rounded">
-                                    <button onClick={() => {
-                                        dispatch({ type: 'SELECT_WORKSPACE', payload: { id: ws.id } });
-                                        setIsWorkspaceOpen(false);
-                                    }} className={`flex-grow text-left p-2 text-sm rounded-l transition-colors ${ws.id === activeWorkspaceId ? 'bg-[var(--accent-color)]/20 text-[var(--accent-color)] font-bold' : 'hover:bg-stone-300/80 dark:hover:bg-slate-700/80'}`}>
+                                    <button onClick={() => dispatch({ type: 'SELECT_WORKSPACE', payload: { id: ws.id } })} className={`flex-grow text-left p-2 text-sm rounded-l transition-colors ${ws.id === activeWorkspaceId ? 'bg-[var(--accent-color)]/20 text-[var(--accent-color)] font-bold' : 'hover:bg-stone-300/80 dark:hover:bg-slate-700/80'}`}>
                                         {ws.name}
                                     </button>
                                     {workspaces.length > 1 && (
-                                        <button onClick={(e) => {
-                                            e.stopPropagation();
-                                            setConfirmingDeleteId(ws.id);
-                                        }} className={`p-2 rounded-r transition-colors opacity-0 group-hover:opacity-100 ${ws.id === activeWorkspaceId ? 'bg-[var(--accent-color)]/20 hover:bg-red-500/20' : 'hover:bg-red-500/10'}`}>
+                                        <button onClick={(e) => handleDeleteWorkspace(e, ws.id)} className={`p-2 rounded-r transition-colors opacity-0 group-hover:opacity-100 ${ws.id === activeWorkspaceId ? 'bg-[var(--accent-color)]/20 hover:bg-red-500/20' : 'hover:bg-red-500/10'}`}>
                                             <TrashIcon className="h-4 w-4 text-stone-500 dark:text-slate-400 group-hover:text-red-500 dark:group-hover:text-red-400" />
                                         </button>
                                     )}
                                 </div>
-                                )
                             ))}
                              <div className="border-t border-stone-300 dark:border-slate-700/60 my-1"></div>
                             {isAddingWorkspace ? (
@@ -200,7 +172,6 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                     <span>新增工作區</span>
                                 </button>
                             )}
-                        </div>
                         </div>
                     </div>
                 </div>
