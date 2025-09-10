@@ -419,7 +419,7 @@ export const CodeReviewer: React.FC = () => {
 
   const renderContent = () => (
     <div className="w-full max-w-4xl mx-auto p-4 sm:p-8 pt-8 sm:pt-12 animate-fade-in flex flex-col gap-8">
-      <div className={`relative bg-stone-100/60 dark:bg-slate-900/60 backdrop-blur-xl border border-stone-300 dark:border-slate-800/50 rounded-xl p-4 sm:p-6 dark:ring-1 dark:ring-inset dark:ring-white/10 transition-all duration-300 shadow-lg shadow-stone-200/50 dark:shadow-none`}>
+      <div className={`relative bg-stone-100/60 dark:bg-slate-900/60 backdrop-blur-xl border border-stone-300 dark:border-slate-800/50 rounded-xl p-4 sm:p-6 dark:ring-1 dark:ring-inset dark:ring-white/10 transition-all duration-300 shadow-lg shadow-stone-200/50 dark:shadow-none hover:border-[var(--accent-color)]/50 dark:hover:shadow-lg dark:hover:shadow-[var(--accent-color)]/10 dark:hover:-translate-y-px`}>
         <ModeSelectorGrid 
             currentMode={mode} 
             onModeChange={(newMode) => onUpdateConversation({ ...conversation, mode: newMode })} 
@@ -427,7 +427,7 @@ export const CodeReviewer: React.FC = () => {
         />
       </div>
       
-      <div className={`relative bg-stone-100/60 dark:bg-slate-900/60 backdrop-blur-xl border border-stone-300 dark:border-slate-800/50 rounded-xl p-4 sm:p-6 dark:ring-1 dark:ring-inset dark:ring-white/10 transition-all duration-300 shadow-lg shadow-stone-200/50 dark:shadow-none`}>
+      <div className={`relative bg-stone-100/60 dark:bg-slate-900/60 backdrop-blur-xl border border-stone-300 dark:border-slate-800/50 rounded-xl p-4 sm:p-6 dark:ring-1 dark:ring-inset dark:ring-white/10 transition-all duration-300 shadow-lg shadow-stone-200/50 dark:shadow-none hover:border-[var(--accent-color)]/50 dark:hover:shadow-lg dark:hover:shadow-[var(--accent-color)]/10 dark:hover:-translate-y-px`}>
         <FileManagementArea
             files={files}
             setFiles={setFiles}
@@ -444,7 +444,7 @@ export const CodeReviewer: React.FC = () => {
         />
       </div>
       
-      <div className="bg-stone-100/60 dark:bg-slate-900/60 backdrop-blur-xl border border-stone-300 dark:border-slate-800/50 rounded-xl p-4 sm:p-6 dark:ring-1 dark:ring-inset dark:ring-white/10 shadow-lg shadow-stone-200/50 dark:shadow-none">
+      <div className="relative bg-stone-100/60 dark:bg-slate-900/60 backdrop-blur-xl border border-stone-300 dark:border-slate-800/50 rounded-xl p-4 sm:p-6 dark:ring-1 dark:ring-inset dark:ring-white/10 shadow-lg shadow-stone-200/50 dark:shadow-none transition-all duration-300 hover:border-[var(--accent-color)]/50 dark:hover:shadow-lg dark:hover:shadow-[var(--accent-color)]/10 dark:hover:-translate-y-px">
         <PromptInputArea 
           userMessage={userMessage}
           setUserMessage={setUserMessage}

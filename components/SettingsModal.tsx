@@ -76,7 +76,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                            type="password"
                            value={localSettings.geminiApiKey}
                            onChange={(e) => setLocalSettings(prev => ({ ...prev, geminiApiKey: e.target.value }))}
-                           className="w-full bg-stone-200 dark:bg-slate-900/80 border border-stone-400 dark:border-slate-700 rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-[var(--accent-color)] focus:border-[var(--accent-color)] outline-none"
+                           className="w-full bg-stone-200 dark:bg-slate-900/80 border border-stone-400 dark:border-slate-700 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-[var(--accent-color)]/50 focus:border-[var(--accent-color)] outline-none transition-all"
                            placeholder="若留空，則使用環境變數中的金鑰"
                          />
                      </div>
@@ -87,7 +87,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                            type="text"
                            value={localSettings.geminiProxyUrl}
                            onChange={(e) => setLocalSettings(prev => ({ ...prev, geminiProxyUrl: e.target.value }))}
-                           className="w-full bg-stone-200 dark:bg-slate-900/80 border border-stone-400 dark:border-slate-700 rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-[var(--accent-color)] focus:border-[var(--accent-color)] outline-none"
+                           className="w-full bg-stone-200 dark:bg-slate-900/80 border border-stone-400 dark:border-slate-700 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-[var(--accent-color)]/50 focus:border-[var(--accent-color)] outline-none transition-all"
                            placeholder="可選。若留空則使用官方 API 端點。"
                          />
                      </div>
@@ -115,7 +115,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                            type="password"
                            value={localSettings.openaiApiKey}
                            onChange={(e) => setLocalSettings(prev => ({ ...prev, openaiApiKey: e.target.value }))}
-                           className="w-full bg-stone-200 dark:bg-slate-900/80 border border-stone-400 dark:border-slate-700 rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-[var(--accent-color)] focus:border-[var(--accent-color)] outline-none"
+                           className="w-full bg-stone-200 dark:bg-slate-900/80 border border-stone-400 dark:border-slate-700 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-[var(--accent-color)]/50 focus:border-[var(--accent-color)] outline-none transition-all"
                            placeholder="sk-..."
                          />
                      </div>
@@ -126,7 +126,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                            type="text"
                            value={localSettings.openaiProxyUrl}
                            onChange={(e) => setLocalSettings(prev => ({ ...prev, openaiProxyUrl: e.target.value }))}
-                           className="w-full bg-stone-200 dark:bg-slate-900/80 border border-stone-400 dark:border-slate-700 rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-[var(--accent-color)] focus:border-[var(--accent-color)] outline-none"
+                           className="w-full bg-stone-200 dark:bg-slate-900/80 border border-stone-400 dark:border-slate-700 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-[var(--accent-color)]/50 focus:border-[var(--accent-color)] outline-none transition-all"
                            placeholder="https://api.openai.com/v1"
                          />
                           <p className="text-xs text-stone-500 dark:text-slate-500 mt-1">可選。若留空則使用官方預設端點。</p>
@@ -144,10 +144,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
 
         </main>
         <footer className="flex justify-end items-center gap-4 p-4 border-t border-stone-300 dark:border-slate-700/80 bg-stone-200 dark:bg-slate-800/50">
-          <button onClick={handleCancel} className="px-5 py-2 bg-stone-100 dark:bg-slate-700 text-stone-800 dark:text-slate-200 text-sm font-bold rounded-lg hover:bg-stone-300 dark:hover:bg-slate-600 transition-colors border border-stone-400 dark:border-slate-600">
+          <button onClick={handleCancel} className="px-5 py-2 bg-stone-100 dark:bg-slate-700 text-stone-800 dark:text-slate-200 text-sm font-bold rounded-lg hover:bg-stone-300 dark:hover:bg-slate-600 transition-all border border-stone-400 dark:border-slate-600 transform active:scale-95">
             取消
           </button>
-          <button onClick={handleSave} className="px-6 py-2 bg-[var(--accent-color)] text-white text-sm font-bold rounded-lg hover:brightness-110 transition-all">
+          <button onClick={handleSave} className="px-6 py-2 bg-[var(--accent-color)] text-white text-sm font-bold rounded-lg hover:brightness-110 transition-all transform hover:-translate-y-px hover:shadow-lg hover:shadow-[var(--accent-color)]/30 active:scale-95">
             儲存
           </button>
         </footer>

@@ -192,12 +192,12 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
             {tooltipData && (
                 <Portal>
                     <div
-                        className="fixed w-max max-w-xs p-3 bg-stone-50 dark:bg-slate-800 text-stone-800 dark:text-slate-200 text-xs rounded-lg shadow-lg z-50 animate-fade-in border border-stone-300 dark:border-slate-700"
+                        className="fixed w-max max-w-xs p-3 bg-stone-50 dark:bg-slate-800 text-stone-800 dark:text-slate-200 text-xs rounded-lg shadow-lg z-50 border border-stone-300 dark:border-slate-700 transition-all duration-200 ease-out"
                         style={{
                             left: `${tooltipData.rect.right + 10}px`,
                             top: `${tooltipData.rect.top + tooltipData.rect.height / 2}px`,
-                            transform: 'translateY(-50%)',
-                            animationDuration: '150ms'
+                            transform: `translateY(-50%)`,
+                            opacity: tooltipData ? 1 : 0,
                         }}
                     >
                         <div className="space-y-1.5 font-sans text-left">
