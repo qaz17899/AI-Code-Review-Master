@@ -56,19 +56,4 @@ export const DEEP_DIVE_MESSAGES = [
   '正在模擬執行路徑...',
 ];
 
-export const MODE_SPECIFIC_MESSAGES: Partial<Record<ReviewMode, string[]>> = {
-  SECURITY: [
-    '掃描 OWASP Top 10 風險...',
-    '檢查相依性套件漏洞...',
-    '分析潛在的資料洩漏點...',
-    '模擬權限繞過攻擊路徑...'
-  ],
-  OPTIMIZE: [
-    '分析演算法的時間複雜度...',
-    '評估記憶體分配效率...',
-    '尋找非同步處理機會...',
-    '檢查資料庫查詢瓶頸...'
-  ],
-};
-
 export const ALL_SUPPORTED_TYPES = ['.py', '.yml', '.yaml', '.ts', '.tsx', '.js', '.jsx', '.json', '.html', '.css', '.zip'];

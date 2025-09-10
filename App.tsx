@@ -81,7 +81,9 @@ const App: React.FC = () => {
                     </div>
                     <div>
                         <h1 className="text-xl font-bold accent-gradient-text">AI Code Review Master</h1>
-                        <p className="text-xs text-stone-600 dark:text-slate-400 opacity-80 -mt-1">Your Personal Senior Code Review Expert</p>
+                        <p key={activeConversation?.mode} className="text-xs text-stone-600 dark:text-slate-400 opacity-80 -mt-1 animate-fade-in-up">
+                            {MODES[activeConversation?.mode || 'REVIEW'].ui.subTitle}
+                        </p>
                     </div>
                 </div>
             </div>
