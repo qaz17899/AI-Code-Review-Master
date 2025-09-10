@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-// FIX: Added UploadIcon to imports as it is used for the drag-and-drop overlay.
-import { CopyIcon, CheckIcon, UserIcon, MasterIcon, TrashIcon, SparklesIcon, TokenIcon, ChevronDownIcon, RefreshIcon, StopIcon, ClockIcon, UploadIcon } from './icons';
+import { CopyIcon, CheckIcon, UserIcon, TrashIcon, SparklesIcon, TokenIcon, ChevronDownIcon, RefreshIcon, StopIcon, ClockIcon, UploadIcon } from './icons';
 import type { ChatMessage, AppFile, ApiSettings } from '../types';
 import { ImageModal } from './ImageModal';
 import { explainResponse, generateExplanationStream } from '../services/geminiService';
@@ -9,6 +8,7 @@ import { ModelMessage } from './ModelMessage';
 import { ExplanationDisplay } from './ExplanationDisplay';
 import { SubmittedFileTree } from './SubmittedFileTree';
 import { useConversation } from '../contexts/ConversationContext';
+import { MODES } from '../config/modes';
 
 interface ResultDisplayProps {
   history: ChatMessage[];
@@ -18,6 +18,7 @@ interface ResultDisplayProps {
   onRegenerate: () => Promise<void>;
   onStopGeneration: () => void;
   settings: ApiSettings;
+  acceptedTypes: string[];
 }
 
 const MessageToolbar: React.FC<{
@@ -62,7 +63,7 @@ const MessageToolbar: React.FC<{
 );
 
 
-export const ResultDisplay: React.FC<ResultDisplayProps> = ({ history, onFollowUp, isSubmitting, onDeleteFromTurn, onRegenerate, onStopGeneration, settings }) => {
+export const ResultDisplay: React.FC<ResultDisplayProps> = ({ history, onFollowUp, isSubmitting, onDeleteFromTurn, onRegenerate, onStopGeneration, settings, acceptedTypes }) => {
     const { activeConversation } = useConversation();
     const [viewingImage, setViewingImage] = useState<string | null>(null);
     const [isDraggingOver, setIsDraggingOver] = useState(false);
@@ -73,6 +74,7 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ history, onFollowU
         followUpHistory: Array<{ role: 'user' | 'model', content: string }>;
         isGeneratingFollowUp: boolean;
         followUpError: string | null;
+        suggestedQuestions?: string[];
         isExpanded: boolean;
     }>>({});
     
@@ -92,11 +94,13 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ history, onFollowU
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const messageRefs = useRef(new Map<number, HTMLDivElement>());
-    // FIX: Replaced `NodeJS.Timeout` with `ReturnType<typeof setTimeout>` for browser compatibility.
     const hideToolbarTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const userInterruptedScroll = useRef(false);
     const [showScrollButton, setShowScrollButton] = useState(false);
+
+    const mode = activeConversation?.mode || 'REVIEW';
+    const IconComponent = MODES[mode]?.icon || MODES['REVIEW'].icon;
 
     const handleShowToolbar = (index: number) => {
         if (hideToolbarTimeoutRef.current) {
@@ -210,11 +214,11 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ history, onFollowU
         const message = history[index]?.content;
         if (!message) return;
 
-        setExplanationState(prev => ({ ...prev, [index]: { isLoading: true, content: null, error: null, followUpHistory: [], isGeneratingFollowUp: false, followUpError: null, isExpanded: true } }));
+        setExplanationState(prev => ({ ...prev, [index]: { isLoading: true, content: null, error: null, followUpHistory: [], isGeneratingFollowUp: false, followUpError: null, suggestedQuestions: [], isExpanded: true } }));
 
         try {
-            const explanation = await explainResponse(message, settings);
-            setExplanationState(prev => ({ ...prev, [index]: { ...prev[index], isLoading: false, content: explanation } }));
+            const { explanation, suggestedQuestions } = await explainResponse(message, settings);
+            setExplanationState(prev => ({ ...prev, [index]: { ...prev[index], isLoading: false, content: explanation, suggestedQuestions } }));
         } catch (err) {
             const error = err instanceof Error ? err.message : "Unknown error";
             setExplanationState(prev => ({ ...prev, [index]: { ...prev[index], isLoading: false, error } }));
@@ -226,7 +230,7 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ history, onFollowU
         if (!state || !state.content) return;
 
         const newHistory = [...state.followUpHistory, { role: 'user' as const, content: question }, { role: 'model' as const, content: '' }];
-        setExplanationState(prev => ({ ...prev, [index]: { ...prev[index], followUpHistory: newHistory, isGeneratingFollowUp: true, followUpError: null } }));
+        setExplanationState(prev => ({ ...prev, [index]: { ...prev[index], followUpHistory: newHistory, isGeneratingFollowUp: true, followUpError: null, suggestedQuestions: [] } }));
 
         try {
             const originalResponse = history[index].content;
@@ -306,7 +310,7 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ history, onFollowU
                             return (
                                 <div key={index} ref={el => { if (el) messageRefs.current.set(index, el); }} className="animate-fade-in-up" onMouseEnter={() => handleShowToolbar(index)} onMouseLeave={handleHideToolbar}>
                                     <div className="flex items-start gap-4">
-                                        <MasterIcon className="h-8 w-8 text-[var(--accent-color)] flex-shrink-0 mt-1" />
+                                        <IconComponent className="h-8 w-8 text-[var(--accent-color)] flex-shrink-0 mt-1" />
                                         <div className="flex-grow min-w-0 relative">
                                             <div className="bg-stone-100/60 dark:bg-slate-900/60 p-4 rounded-lg border border-stone-300 dark:border-slate-800/50">
                                                 <div className="flex justify-between items-center mb-2">
@@ -398,7 +402,7 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ history, onFollowU
                             title={`輸入: ${lastModelMessageWithMetadata.usageMetadata.promptTokenCount.toLocaleString()}, 輸出: ${lastModelMessageWithMetadata.usageMetadata.candidatesTokenCount.toLocaleString()}`}
                         >
                             <TokenIcon className="h-3.5 w-3.5" />
-                            <span>總計: {lastModelMessageWithMetadata.usageMetadata.totalTokenCount.toLocaleString()} Tokens</span>
+                            <span>總計: ${lastModelMessageWithMetadata.usageMetadata.totalTokenCount.toLocaleString()} Tokens</span>
                         </div>
                     </div>
                 </div>
@@ -413,7 +417,7 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ history, onFollowU
                         </button>
                     </div>
                 ) : (
-                    <FollowUpForm onFollowUp={onFollowUp} isSubmitting={isSubmitting} onReadyForDrop={handleReadyForDrop} provider={activeConversation?.provider || 'gemini'} settings={settings} />
+                    <FollowUpForm onFollowUp={onFollowUp} isSubmitting={isSubmitting} onReadyForDrop={handleReadyForDrop} provider={activeConversation?.provider || 'gemini'} settings={settings} acceptedTypes={acceptedTypes} />
                 )}
             </div>
         </div>

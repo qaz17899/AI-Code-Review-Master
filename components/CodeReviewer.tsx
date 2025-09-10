@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { ResultDisplay } from './ResultDisplay';
-import { generateGeminiChatStream, countResponseTokens as countGeminiResponseTokens, countInputTokens as countGeminiInputTokens, scopeRelevantFiles } from '../services/geminiService';
-import { generateOpenAIChatStream, countResponseTokens as countOpenAIResponseTokens, countInputTokens as countOpenAIInputTokens } from '../services/openaiService';
+import { generateChatStream, countInputTokens, countResponseTokens } from '../services/aiService';
+import { scopeRelevantFiles as scopeGeminiRelevantFiles } from '../services/geminiService';
 import { DIFF_INSTRUCTION, ALL_SUPPORTED_TYPES } from './constants';
 import type { ReviewMode, ChatMessage, AppFile, Conversation } from '../types';
 import { StarIcon } from './icons';
@@ -41,16 +41,6 @@ export const CodeReviewer: React.FC = () => {
   const conversation = activeConversation;
   const mode = conversation?.mode || 'REVIEW';
   const provider = conversation?.provider || 'gemini';
-
-  // Define service functions based on provider
-  const { generateChatStream, countInputTokens, countResponseTokens } = useMemo(() => {
-    if (provider === 'openai') {
-      return { generateChatStream: generateOpenAIChatStream, countInputTokens: countOpenAIInputTokens, countResponseTokens: countOpenAIResponseTokens };
-    }
-    // Default to gemini
-    return { generateChatStream: generateGeminiChatStream, countInputTokens: countGeminiInputTokens, countResponseTokens: countGeminiResponseTokens };
-  }, [provider]);
-
 
   const filesToCount = useMemo(() => files.filter(f => selectedFilePaths.has(f.path)), [files, selectedFilePaths]);
   const [inputTokenCount, isCountingTokens] = useDebouncedTokenCounter(provider, filesToCount, userMessage, pastedImages, settings);
@@ -140,7 +130,7 @@ export const CodeReviewer: React.FC = () => {
         
         let responseTokens = 0;
         try {
-            responseTokens = await countResponseTokens(finalContent, settings);
+            responseTokens = await countResponseTokens(provider, finalContent, settings);
         } catch (e) {
             console.error("Failed to count response tokens:", e);
         }
@@ -167,7 +157,7 @@ export const CodeReviewer: React.FC = () => {
         };
         onUpdateConversation(finalConversation);
     
-    }, [onUpdateConversation, settings, countResponseTokens]);
+    }, [onUpdateConversation, settings, provider]);
 
   const executeChatGeneration = useCallback(async (
     historyForAPI: ChatMessage[],
@@ -194,20 +184,19 @@ export const CodeReviewer: React.FC = () => {
     try {
         const masterPromptTemplate = MODES[mode].prompt;
         const masterPrompt = settings.forceDiff ? `${masterPromptTemplate}\n\n${DIFF_INSTRUCTION}` : masterPromptTemplate;
-        const promptTokenCount = await countInputTokens(filesToSubmit, messageToSend, imagesToSend, settings);
+        const promptTokenCount = await countInputTokens(provider, filesToSubmit, messageToSend, imagesToSend, settings);
         const signal = abortControllerRef.current.signal;
 
-        // FIX: The `generateChatStream` function expects 7 distinct arguments, but was being called with a single object.
-        // This change unpacks the object into the correct argument list, resolving the "Expected 7 arguments, but got 1" error.
-        const stream = await generateChatStream(
-            historyForAPI,
-            filesToSubmit,
-            messageToSend,
-            imagesToSend,
+        const stream = await generateChatStream({
+            provider,
+            history: historyForAPI,
+            files: filesToSubmit,
+            userMessage: messageToSend,
+            images: imagesToSend,
             masterPrompt,
             signal,
-            settings
-        );
+            settings,
+        });
         
         await handleStreamingResponse(stream, conversationForStreaming, promptTokenCount, startTime);
 
@@ -224,7 +213,7 @@ export const CodeReviewer: React.FC = () => {
        abortControllerRef.current = null;
        setSubmittingConversationId(null);
     }
-  }, [conversation, isSubmitting, submittingConversationId, onUpdateConversation, mode, settings, handleStreamingResponse, generateChatStream, countInputTokens]);
+  }, [conversation, isSubmitting, submittingConversationId, onUpdateConversation, mode, provider, settings, handleStreamingResponse]);
     
   const handleSubmit = async (isFollowUp: boolean, followUpPayload?: { files: AppFile[], message: string, images: string[] }) => {
     const filesToSubmit = isFollowUp ? followUpPayload!.files : files.filter(f => selectedFilePaths.has(f.path));
@@ -353,8 +342,8 @@ export const CodeReviewer: React.FC = () => {
         setIsScoping(true);
         setError('');
         try {
-          const defaultMessage = "請對我上傳的檔案進行一次全面的程式碼審查。";
-          let recommended = await scopeRelevantFiles(files, userMessage.trim() || defaultMessage, settings);
+          const defaultMessage = MODES[mode]?.ui?.placeholder || "請對我上傳的檔案進行一次全面的程式碼審查。";
+          let recommended = await scopeGeminiRelevantFiles(files, userMessage.trim() || defaultMessage, settings);
           if (recommended.length === 0 && files.length > 0) {
             recommended = files.map(f => f.path);
           }
@@ -400,8 +389,10 @@ export const CodeReviewer: React.FC = () => {
                 isSubmitting={isSubmitting}
                 onDeleteFromTurn={handleDeleteFromTurn}
                 onRegenerate={handleRegenerate}
+                // FIX: Pass `handleStopGeneration` to the `onStopGeneration` prop of `ResultDisplay` as `onStopGeneration` was not defined.
                 onStopGeneration={handleStopGeneration}
                 settings={settings}
+                acceptedTypes={acceptedTypes}
             />
         </main>
       </>

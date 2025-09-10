@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CodeReviewer } from './components/CodeReviewer';
-import { MoonIcon, SunIcon, MenuIcon, MasterIcon, XIcon, SettingsIcon } from './components/icons';
+import { MoonIcon, SunIcon, MenuIcon, XIcon, SettingsIcon } from './components/icons';
 import { ConversationSidebar } from './components/ConversationSidebar';
 import type { ReviewMode } from './types';
 import { useConversation } from './contexts/ConversationContext';
@@ -17,6 +17,8 @@ const App: React.FC = () => {
   const { activeConversation } = useConversation();
   const [isThemeAnimating, setIsThemeAnimating] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [displayMode, setDisplayMode] = useState(activeConversation?.mode || 'REVIEW');
+  const [isModeAnimating, setIsModeAnimating] = useState(false);
 
   // --- Theme Management ---
   useEffect(() => {
@@ -48,6 +50,20 @@ const App: React.FC = () => {
 
   }, [activeConversation?.mode]);
 
+  // --- Animated Mode Icon ---
+  useEffect(() => {
+      const newMode = activeConversation?.mode || 'REVIEW';
+      if (displayMode !== newMode) {
+          setIsModeAnimating(true);
+          // Wait for animation before updating the base icon and resetting state
+          const timer = setTimeout(() => {
+              setDisplayMode(newMode);
+              setIsModeAnimating(false);
+          }, 300); // Duration should match animation duration
+          return () => clearTimeout(timer);
+      }
+  }, [activeConversation?.mode, displayMode]);
+
   const toggleTheme = () => {
     setIsThemeAnimating(true);
     // Let animation run
@@ -59,6 +75,10 @@ const App: React.FC = () => {
   };
   
   const themeIconClass = `h-6 w-6 transition-transform duration-300 ${isThemeAnimating ? 'rotate-90 scale-0' : 'rotate-0 scale-100'}`;
+
+  const PrevIconComponent = MODES[displayMode]?.icon || MODES['REVIEW'].icon;
+  const CurrentIconComponent = MODES[activeConversation?.mode || 'REVIEW']?.icon || MODES['REVIEW'].icon;
+
 
   return (
     <div className="w-full h-screen flex flex-col">
@@ -76,10 +96,15 @@ const App: React.FC = () => {
                   </div>
                 </button>
                 <div className="hidden sm:flex items-center gap-3">
-                    <div className="group relative flex items-center justify-center">
-                        <MasterIcon className="h-9 w-9 animate-spin-slow animate-master-pulse transition-all duration-300 group-hover:scale-110 group-hover:shadow-[0_0_15px_var(--accent-color)] rounded-full" style={{ animationDuration: '5s', transitionProperty: 'transform, box-shadow' }}/>
+                    <div className="relative flex items-center justify-center h-9 w-9">
+                        <PrevIconComponent
+                            key={displayMode}
+                            className={`absolute h-9 w-9 accent-gradient-icon transition-all duration-300 ease-in-out ${isModeAnimating ? 'opacity-0 scale-50 -rotate-45' : 'opacity-100 scale-100 rotate-0'}`} />
+                        <CurrentIconComponent
+                            key={activeConversation?.mode || 'REVIEW'}
+                            className={`absolute h-9 w-9 accent-gradient-icon transition-all duration-300 ease-in-out ${isModeAnimating ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-50 rotate-45'}`} />
                     </div>
-                    <div key={activeConversation?.mode}>
+                    <div key={activeConversation?.mode || 'REVIEW'}>
                         <h1 className="text-xl font-bold accent-gradient-text animate-fade-in-up">
                             {MODES[activeConversation?.mode || 'REVIEW'].ui.mainTitle}
                         </h1>

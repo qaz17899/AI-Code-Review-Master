@@ -1,5 +1,4 @@
 import type { AppFile } from './types';
-import { readFile as readSingleFile } from './utils'; // Renamed to avoid conflict
 
 // Interface for the payload used by file upload components
 export interface UploadPayload {

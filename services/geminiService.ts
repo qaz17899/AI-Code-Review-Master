@@ -182,24 +182,45 @@ export const scopeRelevantFiles = async (
 export const explainResponse = async (
     content: string,
     settings: ApiSettings
-): Promise<string> => {
+): Promise<{ explanation: string; suggestedQuestions: string[] }> => {
     const ai = getClient(settings);
     const modelName = 'gemini-2.5-pro';
-    const prompt = `你是一位 AI 程式設計導師。一位資深開發者提供了以下的程式碼審查。你的任務是用清晰、簡潔且易於理解的方式為初階開發者解釋它。專注於解釋建議背後的「為什麼」。
+    const prompt = `You are an AI programming tutor. A senior developer provided the following code review. Your task is to explain it clearly for a junior developer, focusing on the "why" behind the suggestions.
 
-需要解釋的程式碼審查：
+After the explanation, you MUST provide 3-4 follow-up questions a junior developer might ask. These questions should encourage deeper learning about related concepts.
+
+The code review to explain:
 ---
 ${content}
 ---
 
-你的解釋：`;
+Your response MUST be a valid JSON object. Do not include any other text or markdown formatting. The JSON object must have the following structure:
+{
+  "explanation": "Your detailed explanation here, in Markdown format.",
+  "suggestedQuestions": [
+    "A relevant follow-up question.",
+    "Another interesting question.",
+    "A third, insightful question."
+  ]
+}`;
 
-    const response = await ai.models.generateContent({
-        model: modelName,
-        contents: prompt
-    });
+    try {
+        const response = await ai.models.generateContent({
+            model: modelName,
+            contents: prompt,
+        });
 
-    return response.text;
+        const result = JSON.parse(response.text);
+        if (result && typeof result.explanation === 'string' && Array.isArray(result.suggestedQuestions)) {
+            return result;
+        }
+        // Fallback if JSON is not as expected
+        return { explanation: response.text, suggestedQuestions: [] };
+    } catch (error) {
+        console.error("Failed to get structured explanation:", error);
+        // Fallback on error, return the original content as explanation
+        return { explanation: "抱歉，分析解說時發生錯誤。", suggestedQuestions: [] };
+    }
 };
 
 export async function* generateExplanationStream(

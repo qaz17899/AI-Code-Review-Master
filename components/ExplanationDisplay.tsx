@@ -10,6 +10,7 @@ interface ExplanationDisplayProps {
     followUpHistory: Array<{ role: 'user' | 'model', content: string }>;
     isGeneratingFollowUp: boolean;
     followUpError: string | null;
+    suggestedQuestions?: string[];
     isExpanded: boolean;
   };
   onAskFollowUp: (question: string) => void;
@@ -114,6 +115,22 @@ export const ExplanationDisplay: React.FC<ExplanationDisplayProps> = ({ state, o
                                 <div ref={historyEndRef} />
                             </div>
                             {state.followUpError && <p className="text-xs text-red-500 dark:text-red-400 mt-2">追問失敗: {state.followUpError}</p>}
+                            
+                            {/* NEW: Suggested Questions */}
+                            {state.suggestedQuestions && state.suggestedQuestions.length > 0 && !state.isGeneratingFollowUp && (
+                                <div className="mt-4 pt-4 border-t border-stone-400/70 dark:border-slate-700/60">
+                                    <p className="text-xs font-semibold text-stone-600 dark:text-slate-400 mb-2">您可以接著問：</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {state.suggestedQuestions.map((q, i) => (
+                                            <button 
+                                                key={i}
+                                                onClick={() => { setFollowUpMessage(q); handleSubmit({ preventDefault: () => {} } as React.FormEvent); }}
+                                                className="px-2.5 py-1 bg-stone-300/80 dark:bg-slate-700/80 text-stone-700 dark:text-slate-300 text-xs rounded-full hover:bg-stone-400/80 dark:hover:bg-slate-700 transition-colors"
+                                            >{q}</button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                             
                             {/* Follow-up form */}
                             <form onSubmit={handleSubmit} className="mt-4 pt-4 border-t border-stone-400/70 dark:border-slate-700/60 relative flex items-center gap-2">

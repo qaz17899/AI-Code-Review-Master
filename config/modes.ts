@@ -6,6 +6,8 @@ import {
     BoltIcon, PaintBrushIcon, CodeBracketIcon, ScaleIcon, CheckBadgeIcon, ScissorsIcon,
     WorkflowIcon, WandIcon, RefreshIcon,
 } from '../components/icons';
+// FIX: Import IconProps to correctly type icon components.
+import type { IconProps } from '../components/icons';
 import { SHARED_DEPENDENCY_INSTRUCTION } from '../components/constants';
 
 type ModeTheme = {
@@ -27,7 +29,8 @@ export interface ModeUI {
 }
 
 export interface ModeConfig {
-    icon: React.FC<{ className: string }>;
+    // FIX: Update icon type to accept standard SVG props like `style`.
+    icon: React.FC<IconProps>;
     name: string; // 模式的中文名稱
     description: string;
     prompt: string;

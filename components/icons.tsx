@@ -1,7 +1,7 @@
 // FIX: Create icons module to resolve import errors across multiple components.
 import React from 'react';
 
-interface IconProps extends React.SVGProps<SVGSVGElement> {}
+export interface IconProps extends React.SVGProps<SVGSVGElement> {}
 
 export const MoonIcon: React.FC<IconProps> = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.75} stroke="currentColor" {...props}>

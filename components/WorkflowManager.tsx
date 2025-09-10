@@ -36,6 +36,7 @@ export const WorkflowManager: React.FC = () => {
     const [finalFiles, setFinalFiles] = useState<AppFile[]>([]);
     const isAbortingRef = useRef(false);
     const abortControllerRef = useRef<AbortController | null>(null);
+    const dragItem = useRef<number | null>(null);
 
     const logContainerRef = useRef<HTMLDivElement>(null);
 
@@ -158,6 +159,23 @@ export const WorkflowManager: React.FC = () => {
         setSequence(prev => prev.filter((_, i) => i !== index));
     };
 
+    const handleDragStart = (index: number) => {
+        dragItem.current = index;
+    };
+
+    const handleDragEnter = (index: number) => {
+        if (dragItem.current === null || dragItem.current === index) return;
+        setSequence(prev => {
+            const newSequence = [...prev];
+            const [draggedItem] = newSequence.splice(dragItem.current!, 1);
+            newSequence.splice(index, 0, draggedItem);
+            dragItem.current = index;
+            return newSequence;
+        });
+    };
+
+    const handleDragEnd = () => (dragItem.current = null);
+
     const renderConfig = () => (
         <div className="w-full max-w-4xl mx-auto p-4 sm:p-8 pt-8 sm:pt-12 animate-fade-in flex flex-col gap-8">
             <div className="text-center">
@@ -189,7 +207,15 @@ export const WorkflowManager: React.FC = () => {
                         <label className="block text-sm font-medium text-stone-700 dark:text-slate-300 mb-2">模式執行序列</label>
                         <div className="bg-stone-200 dark:bg-slate-800/60 border border-stone-300 dark:border-slate-700 rounded-lg p-2 min-h-[120px]">
                             {sequence.map((mode, index) => (
-                                <div key={index} className="flex items-center justify-between p-2 bg-stone-100 dark:bg-slate-900/70 rounded-md mb-1.5 animate-fade-in-up">
+                                <div 
+                                    key={`${mode}-${index}`}
+                                    draggable
+                                    onDragStart={() => handleDragStart(index)}
+                                    onDragEnter={() => handleDragEnter(index)}
+                                    onDragEnd={handleDragEnd}
+                                    onDragOver={(e) => e.preventDefault()}
+                                    className="flex items-center justify-between p-2 bg-stone-100 dark:bg-slate-900/70 rounded-md mb-1.5 animate-fade-in-up cursor-grab active:cursor-grabbing"
+                                >
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm font-mono text-stone-500">{index + 1}.</span>
                                         {getModeIcon(mode, "h-5 w-5 text-stone-700 dark:text-slate-300")}

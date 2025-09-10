@@ -11,10 +11,10 @@ export const FollowUpForm: React.FC<{
     onFollowUp: (files: AppFile[], message: string, images: string[]) => Promise<void>;
     isSubmitting: boolean;
     onReadyForDrop: (handler: (files: FileList | File[]) => void) => void;
-    // FIX: Retrieve provider from active conversation to correctly dispatch token counting.
     provider: ApiSettings['defaultProvider'];
     settings: ApiSettings;
-}> = ({ onFollowUp, isSubmitting, onReadyForDrop, provider, settings }) => {
+    acceptedTypes: string[];
+}> = ({ onFollowUp, isSubmitting, onReadyForDrop, provider, settings, acceptedTypes }) => {
     const [files, setFiles] = useState<AppFile[]>([]);
     const [message, setMessage] = useState('');
     const [pastedImages, setPastedImages] = useState<string[]>([]);
@@ -42,7 +42,7 @@ export const FollowUpForm: React.FC<{
         }));
 
         try {
-            const newAppFiles = await processUploadedFiles(payloads, ALL_SUPPORTED_TYPES, console.error);
+            const newAppFiles = await processUploadedFiles(payloads, acceptedTypes, console.error);
             setFiles(prevFiles => {
                 const newUniqueFiles = newAppFiles.filter(nf => !prevFiles.some(pf => pf.path === nf.path));
                 return [...prevFiles, ...newUniqueFiles];
@@ -51,7 +51,7 @@ export const FollowUpForm: React.FC<{
         } catch (error) {
             console.error("Error processing follow-up files:", error);
         }
-    }, []);
+    }, [acceptedTypes]);
 
     useEffect(() => {
       onReadyForDrop(processAndSetFiles);
