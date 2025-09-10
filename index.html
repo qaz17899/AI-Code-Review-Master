@@ -29,13 +29,12 @@
       .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
       .custom-scrollbar::-webkit-scrollbar-thumb {
         background: var(--accent-color, #f59e0b);
-        border-radius: 4px;
-        opacity: 0;
-        transition: opacity 0.2s ease-out;
+        border-radius: 4px;        
+        transition: background-color 0.2s ease-in-out, opacity 0.2s ease-in-out;
       }
-      .custom-scrollbar:hover::-webkit-scrollbar-thumb {
-        opacity: 0.6;
-      }
+      /* Show scrollbar on hover of the container, with smooth transition */
+      .custom-scrollbar:hover::-webkit-scrollbar-thumb { opacity: 0.6; }
+      .custom-scrollbar::-webkit-scrollbar-thumb { opacity: 0; }
       .custom-scrollbar::-webkit-scrollbar-thumb:hover {
         background: var(--accent-color-hover, #d97706);
         opacity: 0.9;
@@ -193,16 +192,16 @@
             },
             keyframes: {
               'fade-in': {
-                '0%': { opacity: '0', transform: 'translateY(10px)' },
+                '0%': { opacity: '0', transform: 'translateY(15px)' },
                 '100%': { opacity: '1', transform: 'translateY(0)' },
               },
               'fade-in-up': {
-                '0%': { opacity: '0', transform: 'translateY(10px)' },
+                '0%': { opacity: '0', transform: 'translateY(15px)' },
                 '100%': { opacity: '1', transform: 'translateY(0)' },
               },
               'fade-out-down': {
                 '0%': { opacity: '1', transform: 'translateY(0)' },
-                '100%': { opacity: '0', transform: 'translateY(10px)' },
+                '100%': { opacity: '0', transform: 'translateY(15px)' },
               },
               'spin-slow': {
                 'to': { transform: 'rotate(360deg)' },
@@ -223,7 +222,7 @@
             animation: {
               'fade-in': 'fade-in 0.5s ease-out forwards',
               'fade-in-up': 'fade-in-up 0.4s ease-out forwards',
-              'fade-out-down': 'fade-out-down 0.5s ease-out forwards',
+              'fade-out-down': 'fade-out-down 0.4s ease-out forwards',
               'spin-slow': 'spin-slow 3s linear infinite',
               'master-pulse': 'master-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
               'subtle-pulse': 'subtle-pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',

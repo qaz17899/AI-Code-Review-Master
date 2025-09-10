@@ -91,7 +91,7 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                 <div className="flex-shrink-0 p-2 border-b border-stone-300 dark:border-slate-800/50">
                     <button
                         onClick={handleNew}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-stone-800 dark:text-slate-200 bg-stone-50/50 dark:bg-slate-800/50 rounded-lg transition-all duration-200 border border-stone-400 dark:border-slate-700 hover:border-[var(--accent-color)]/70 hover:shadow-md hover:shadow-[var(--accent-color)]/10 transform-gpu hover:-translate-y-px active:scale-95"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-stone-800 dark:text-slate-200 bg-stone-50/50 dark:bg-slate-800/50 rounded-lg transition-all duration-200 border border-stone-400 dark:border-slate-700 hover:border-[var(--accent-color)]/70 hover:shadow-md hover:shadow-[var(--accent-color)]/10 transform-gpu hover:-translate-y-px active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-color)]"
                     >
                         <PlusIcon className="h-5 w-5" />
                         新的對話
@@ -105,7 +105,7 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                             placeholder="搜尋對話..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-stone-50/50 dark:bg-slate-800/50 border border-stone-400 dark:border-slate-700 rounded-lg pl-9 pr-8 py-1.5 text-sm focus:ring-1 focus:ring-[var(--accent-color)] outline-none transition"
+                            className="w-full bg-stone-50/50 dark:bg-slate-800/50 border border-stone-400 dark:border-slate-700 rounded-lg pl-9 pr-8 py-1.5 text-sm focus:ring-1 focus:ring-[var(--accent-color)] focus:border-[var(--accent-color)] outline-none transition"
                         />
                          {searchQuery && (
                             <button onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-stone-500 hover:text-stone-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors">
@@ -167,14 +167,14 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                                 <div className="flex-shrink-0 flex items-center opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                                                     <button
                                                         onClick={(e) => startEditing(e, conv)}
-                                                        className={`p-1 rounded-md transition-all duration-150 hover:scale-110 active:scale-95 ${isActive ? 'text-white/70 hover:text-white' : 'text-stone-600 dark:text-slate-400 hover:text-stone-800 dark:hover:text-slate-300'}`}
+                                                        className={`p-1.5 rounded-md transition-all duration-150 hover:scale-110 active:scale-95 ${isActive ? 'text-white/70 hover:text-white' : 'text-stone-600 dark:text-slate-400 hover:text-stone-800 dark:hover:text-slate-300'}`}
                                                         aria-label={`重新命名 ${conv.title}`}
                                                     >
                                                         <EditIcon className="h-4 w-4" />
                                                     </button>
                                                     <button 
                                                         onClick={(e) => handleDelete(e, conv.id)}
-                                                        className={`p-1 rounded-md transition-all duration-150 hover:scale-110 active:scale-95 ${isActive ? 'text-white/70 hover:text-red-300' : 'text-stone-600 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400'}`}
+                                                        className={`p-1.5 rounded-md transition-all duration-150 hover:scale-110 active:scale-95 ${isActive ? 'text-white/70 hover:text-red-300' : 'text-stone-600 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400'}`}
                                                         aria-label={`刪除 ${conv.title}`}
                                                     >
                                                         <TrashIcon className="h-4 w-4" />

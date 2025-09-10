@@ -63,7 +63,7 @@ const App: React.FC = () => {
   return (
     <div className="w-full h-screen flex flex-col">
        <SettingsModal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} />
-       <header className="relative overflow-hidden flex-shrink-0 p-2 sm:p-4 border-b border-[var(--accent-color)]/20 flex justify-between items-center bg-stone-100/75 dark:bg-[#10141c]/75 backdrop-blur-2xl sticky top-0 z-20 dark:ring-1 dark:ring-inset dark:ring-white/10 transition-all duration-1000 glass-noise">
+       <header className="relative overflow-hidden flex-shrink-0 p-2 sm:p-4 border-b border-[var(--accent-color)]/20 flex justify-between items-center bg-stone-100/75 dark:bg-[#10141c]/75 backdrop-blur-2xl sticky top-0 z-20 dark:ring-1 dark:ring-inset dark:ring-white/10 transition-all duration-500 glass-noise">
             <div className="flex items-center gap-3">
                 <button 
                   onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -108,17 +108,17 @@ const App: React.FC = () => {
                 </div>
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
                 <button
                     onClick={() => setIsSettingsModalOpen(true)}
-                    className="p-2 rounded-full text-stone-600 dark:text-slate-400 hover:bg-stone-300/70 dark:hover:bg-slate-800/70 hover:text-[var(--accent-color)] transition-all duration-200 transform-gpu hover:scale-110 active:scale-95"
+                    className="p-2 rounded-full text-stone-600 dark:text-slate-400 hover:bg-stone-300/70 dark:hover:bg-slate-800/70 hover:text-[var(--accent-color)] transition-all duration-200 transform-gpu hover:scale-110 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-color)]"
                     aria-label="API Settings"
                 >
                     <SettingsIcon className="h-6 w-6" />
                 </button>
                 <button
                     onClick={toggleTheme}
-                    className="p-2 rounded-full text-stone-600 dark:text-slate-400 hover:bg-stone-300/70 dark:hover:bg-slate-800/70 hover:text-[var(--accent-color)] transition-all duration-200 transform-gpu hover:scale-110 active:scale-95"
+                    className="p-2 rounded-full text-stone-600 dark:text-slate-400 hover:bg-stone-300/70 dark:hover:bg-slate-800/70 hover:text-[var(--accent-color)] transition-all duration-200 transform-gpu hover:scale-110 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-color)]"
                     aria-label="Toggle theme"
                 >
                   <div className="relative h-6 w-6">
