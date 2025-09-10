@@ -70,3 +70,5 @@ export const MODE_SPECIFIC_MESSAGES: Partial<Record<ReviewMode, string[]>> = {
     '檢查資料庫查詢瓶頸...'
   ],
 };
+
+export const ALL_SUPPORTED_TYPES = ['.py', '.yml', '.yaml', '.ts', '.tsx', '.js', '.jsx', '.json', '.html', '.css', '.zip'];

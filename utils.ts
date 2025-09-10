@@ -1,4 +1,5 @@
 import type { AppFile } from './types';
+import { readFile as readSingleFile } from './utils'; // Renamed to avoid conflict
 
 // Interface for the payload used by file upload components
 export interface UploadPayload {
@@ -161,4 +162,40 @@ export const handleImagePaste = (
 
         Promise.all(newImagesPromises).then(onImagesPasted);
     }
+};
+
+/**
+ * Processes an array of UploadPayload objects, handling zips, filtering types, and reading files.
+ * This is the standardized way to handle file uploads in the application.
+ * @param payloads The raw upload payloads from a file input or drag-drop event.
+ * @param acceptedTypes An array of accepted file extensions (e.g., ['.js', '.ts']).
+ * @param onError A callback to handle errors during processing.
+ * @returns A promise that resolves to an array of AppFile objects.
+ */
+export const processUploadedFiles = async (
+    payloads: UploadPayload[],
+    acceptedTypes: string[],
+    onError: (message: string) => void
+): Promise<AppFile[]> => {
+    const processedPayloads: UploadPayload[] = [];
+
+    for (const payload of payloads) {
+        if (payload.file.name.toLowerCase().endsWith('.zip')) {
+            try {
+                const unzippedPayloads = await unzipFile(payload.file);
+                processedPayloads.push(...unzippedPayloads);
+            } catch (e) {
+                console.error(`Failed to unzip file ${payload.file.name}:`, e);
+                onError(`解壓縮檔案 ${payload.file.name} 失敗。`);
+            }
+        } else {
+            processedPayloads.push(payload);
+        }
+    }
+
+    const filteredPayloads = processedPayloads.filter(p =>
+        acceptedTypes.some(type => p.path.toLowerCase().endsWith(type)) && !p.path.toLowerCase().endsWith('.zip')
+    );
+
+    return Promise.all(filteredPayloads.map(readFile));
 };

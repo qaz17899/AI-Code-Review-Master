@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { ResultDisplay } from './ResultDisplay';
 import { generateChatStream, countResponseTokens, countInputTokens } from '../services/aiService';
 import { scopeRelevantFiles } from '../services/geminiService';
-import { DIFF_INSTRUCTION } from './constants';
+import { DIFF_INSTRUCTION, ALL_SUPPORTED_TYPES } from './constants';
 import type { ReviewMode, ChatMessage, AppFile, Conversation } from '../types';
 import { StarIcon, MasterIcon } from './icons';
 import { useConversation } from '../contexts/ConversationContext';
@@ -16,8 +16,6 @@ import { ModeExampleModal } from './ModeExampleModal';
 import { WorkflowManager } from './WorkflowManager';
 import { useDebouncedTokenCounter } from '../hooks/useDebouncedTokenCounter';
 
-
-const ALL_SUPPORTED_TYPES = ['.py', '.yml', '.yaml', '.ts', '.tsx', '.js', '.jsx', '.json', '.html', '.css', '.zip'];
 
 export const CodeReviewer: React.FC = () => {
   const { activeConversation, dispatch } = useConversation();

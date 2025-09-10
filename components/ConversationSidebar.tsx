@@ -1,32 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
-import ReactDOM from 'react-dom';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import type { Conversation } from '../types';
 import { PlusIcon, MessageSquareIcon, TrashIcon, EditIcon, SearchIcon, XIcon } from './icons';
 import { useConversation } from '../contexts/ConversationContext';
 import { useApiSettings } from '../contexts/ApiSettingsContext';
-
-// 1. 建立 Portal 元件，將子元素渲染到 document.body
-const Portal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [mounted, setMounted] = useState(false);
-    const elementRef = useRef<HTMLDivElement | null>(null);
-
-    useEffect(() => {
-        elementRef.current = document.createElement('div');
-        document.body.appendChild(elementRef.current);
-        setMounted(true);
-        return () => {
-            if (elementRef.current) {
-                document.body.removeChild(elementRef.current);
-            }
-        };
-    }, []);
-
-    if (!mounted || !elementRef.current) {
-        return null;
-    }
-
-    return ReactDOM.createPortal(children, elementRef.current);
-};
+import Portal from './Portal';
 
 
 interface ConversationSidebarProps {
@@ -106,9 +83,9 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
         dispatch({ type: 'SELECT_CONVERSATION', payload: { id } });
     }
 
-    const filteredConversations = conversations.filter(conv => 
+    const filteredConversations = useMemo(() => conversations.filter(conv => 
         conv.title.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    ), [conversations, searchQuery]);
 
     return (
         <aside className={`flex-shrink-0 bg-stone-100/75 dark:bg-slate-900/75 backdrop-blur-xl border-r border-stone-300 dark:border-slate-800/50 flex flex-col transition-all duration-300 ease-in-out dark:ring-1 dark:ring-inset dark:ring-white/10 ${isOpen ? 'w-64' : 'w-0'}`}>
@@ -234,4 +211,11 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                             <div className="border-t border-stone-300 dark:border-slate-700 my-1"></div>
                             <p><strong>模式:</strong> <span className="font-mono bg-stone-300 dark:bg-slate-700 px-1 py-0.5 rounded">{tooltipData.conv.mode}</span></p>
                             <p><strong>回合數:</strong> {Math.ceil(tooltipData.conv.history.length / 2)}</p>
-                            <p><strong>
+                            <p><strong>建立時間:</strong> {new Date(tooltipData.conv.createdAt).toLocaleString()}</p>
+                        </div>
+                    </div>
+                </Portal>
+            )}
+        </aside>
+    );
+};

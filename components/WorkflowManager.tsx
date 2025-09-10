@@ -2,7 +2,7 @@ import React, { useState, useCallback, useRef } from 'react';
 import type { AppFile, ReviewMode } from '../types';
 import { useApiSettings } from '../contexts/ApiSettingsContext';
 import { generateChatStream } from '../services/aiService';
-import { WORKFLOW_STEP_PROMPT, WORKFLOW_MODES } from './constants';
+import { WORKFLOW_STEP_PROMPT, WORKFLOW_MODES, ALL_SUPPORTED_TYPES } from './constants';
 import { parseDiffs, applyPatch } from '../utils/patch';
 import { zipAndDownloadFiles } from '../utils';
 import { FileManagementArea } from './FileManagementArea';
@@ -18,14 +18,12 @@ interface LogEntry {
     timestamp: string;
 }
 
-const ALL_SUPPORTED_TYPES = ['.py', '.yml', '.yaml', '.ts', '.tsx', '.js', '.jsx', '.json', '.html', '.css'];
-
 export const WorkflowManager: React.FC = () => {
     const { settings } = useApiSettings();
     
     // Config state
     const [files, setFiles] = useState<AppFile[]>([]);
-    const [acceptedTypes, setAcceptedTypes] = useState<string[]>(ALL_SUPPORTED_TYPES);
+    const [acceptedTypes, setAcceptedTypes] = useState<string[]>(ALL_SUPPORTED_TYPES.filter(t => t !== '.zip'));
     const [selectedFilePaths, setSelectedFilePaths] = useState<Set<string>>(new Set());
     const [sequence, setSequence] = useState<ReviewMode[]>(['CONSOLIDATE', 'REFACTOR']);
     const [cycles, setCycles] = useState(1);

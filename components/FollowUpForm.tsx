@@ -2,9 +2,10 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { PaperclipIcon, SendIcon, XIcon, TokenIcon } from './icons';
 import type { AppFile, ApiSettings } from '../types';
 import { countInputTokens } from '../services/aiService';
-import { readFile, handleImagePaste } from '../utils';
+import { processUploadedFiles, handleImagePaste, type UploadPayload } from '../utils';
 import { getFileIcon } from '../utils/fileTree';
 import { useDebouncedTokenCounter } from '../hooks/useDebouncedTokenCounter';
+import { ALL_SUPPORTED_TYPES } from './constants';
 
 export const FollowUpForm: React.FC<{
     onFollowUp: (files: AppFile[], message: string, images: string[]) => Promise<void>;
@@ -32,19 +33,23 @@ export const FollowUpForm: React.FC<{
     const [inputTokenCount, isCountingTokens] = useDebouncedTokenCounter(provider, files, message, pastedImages, settings);
 
     const processAndSetFiles = useCallback(async (fileList: FileList | File[]) => {
-        const selectedFiles = Array.from(fileList);
-        if (selectedFiles.length === 0) return;
+        const filesArray = Array.from(fileList);
+        if (filesArray.length === 0) return;
+
+        const payloads: UploadPayload[] = filesArray.map(file => ({
+            file,
+            path: (file as any).webkitRelativePath || file.name,
+        }));
+
         try {
-            const newAppFiles = await Promise.all(
-                selectedFiles.map(file => readFile({ file, path: (file as any).webkitRelativePath || file.name }))
-            );
+            const newAppFiles = await processUploadedFiles(payloads, ALL_SUPPORTED_TYPES, console.error);
             setFiles(prevFiles => {
                 const newUniqueFiles = newAppFiles.filter(nf => !prevFiles.some(pf => pf.path === nf.path));
                 return [...prevFiles, ...newUniqueFiles];
             });
             textareaRef.current?.focus();
         } catch (error) {
-            console.error("Error reading follow-up files:", error);
+            console.error("Error processing follow-up files:", error);
         }
     }, []);
 
