@@ -31,13 +31,13 @@
         background: var(--accent-color, #f59e0b);
         border-radius: 4px;        
         transition: background-color 0.2s ease-in-out, opacity 0.2s ease-in-out;
+        opacity: 0;
       }
-      /* Show scrollbar on hover of the container, with smooth transition */
-      .custom-scrollbar:hover::-webkit-scrollbar-thumb { opacity: 0.6; }
-      .custom-scrollbar::-webkit-scrollbar-thumb { opacity: 0; }
+      html:not(.dark) .custom-scrollbar:hover::-webkit-scrollbar-thumb { opacity: 0.6; }
+      html.dark .custom-scrollbar::-webkit-scrollbar-thumb { opacity: 0.2; }
+      html.dark .custom-scrollbar:hover::-webkit-scrollbar-thumb { opacity: 0.7; }
       .custom-scrollbar::-webkit-scrollbar-thumb:hover {
         background: var(--accent-color-hover, #d97706);
-        opacity: 0.9;
       }
       
       /* Base background */
@@ -173,6 +173,9 @@
       }
 
       /* Themed Focus Ring */
+      *:focus-visible {
+          transition: box-shadow 0.2s ease-out;
+      }
       html:not(.dark) *:focus-visible {
           outline: none !important;
           box-shadow: 0 0 0 2px var(--light-bg), 0 0 0 4px var(--accent-color) !important;

@@ -83,8 +83,8 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ history, onFollowU
         pointerEvents: 'none',
         position: 'fixed',
         top: '50%',
-        transform: 'translateY(-50%)',
-        transition: 'opacity 0.2s ease-in-out',
+        transform: 'translateY(-50%) scale(0.9)',
+        transition: 'opacity 0.2s ease-in-out, transform 0.2s ease-in-out',
         zIndex: 20,
     });
     
@@ -137,6 +137,7 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ history, onFollowU
         setToolbarStyle(prev => ({
             ...prev,
             opacity: hoveredMessageIndex !== null ? 1 : 0,
+            transform: `translateY(-50%) scale(${hoveredMessageIndex !== null ? 1 : 0.9})`,
             pointerEvents: hoveredMessageIndex !== null ? 'auto' : 'none',
         }));
     }, [hoveredMessageIndex]);

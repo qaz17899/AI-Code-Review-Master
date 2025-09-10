@@ -72,8 +72,9 @@ export const ExplanationDisplay: React.FC<ExplanationDisplayProps> = ({ state, o
                 </div>
             </div>
             
-            {state.isExpanded && (
-                 <div className="mt-3 animate-fade-in" style={{animationDuration: '300ms'}}>
+            <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${state.isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                <div className="overflow-hidden">
+                    <div className="mt-3 pt-3 border-t border-stone-300 dark:border-slate-700/60">
                     {state.isLoading && (
                         <div className="flex items-center gap-2 text-sm text-stone-600 dark:text-slate-400">
                             <SpinnerIcon className="h-4 w-4 animate-spin" />
@@ -140,8 +141,9 @@ export const ExplanationDisplay: React.FC<ExplanationDisplayProps> = ({ state, o
                             </form>
                         </>
                     )}
+                    </div>
                 </div>
-            )}
+            </div>
         </div>
     );
 };

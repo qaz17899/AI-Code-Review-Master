@@ -168,14 +168,14 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                                 <div className="flex-shrink-0 flex items-center opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                                                     <button
                                                         onClick={(e) => startEditing(e, conv)}
-                                                        className={`p-1.5 rounded-md transition-all duration-150 hover:scale-110 active:scale-95 ${isActive ? 'text-white/70 hover:text-white' : 'text-stone-600 dark:text-slate-400 hover:text-stone-800 dark:hover:text-slate-300'}`}
+                                                        className={`p-1.5 rounded-md transition-all duration-150 hover:scale-110 active:scale-95 ${isActive ? 'text-white/70 hover:text-white hover:bg-white/20' : 'text-stone-600 dark:text-slate-400 hover:text-stone-800 dark:hover:text-slate-300 hover:bg-black/10 dark:hover:bg-white/10'}`}
                                                         aria-label={`重新命名 ${conv.title}`}
                                                     >
                                                         <EditIcon className="h-4 w-4" />
                                                     </button>
                                                     <button 
                                                         onClick={(e) => handleDelete(e, conv.id)}
-                                                        className={`p-1.5 rounded-md transition-all duration-150 hover:scale-110 active:scale-95 ${isActive ? 'text-white/70 hover:text-red-300' : 'text-stone-600 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400'}`}
+                                                        className={`p-1.5 rounded-md transition-all duration-150 hover:scale-110 active:scale-95 ${isActive ? 'text-white/70 hover:text-red-300 hover:bg-white/20' : 'text-stone-600 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10'}`}
                                                         aria-label={`刪除 ${conv.title}`}
                                                     >
                                                         <TrashIcon className="h-4 w-4" />
@@ -193,12 +193,12 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
             {tooltipData && (
                 <Portal>
                     <div
-                        className="fixed w-max max-w-xs p-3 bg-stone-50 dark:bg-slate-800 text-stone-800 dark:text-slate-200 text-xs rounded-lg shadow-lg z-50 border border-stone-300 dark:border-slate-700 transition-all duration-200 ease-out"
+                        className="fixed w-max max-w-xs p-3 bg-stone-50 dark:bg-slate-800 text-stone-800 dark:text-slate-200 text-xs rounded-lg shadow-lg z-50 border border-stone-300 dark:border-slate-700 transition-all duration-150"
                         style={{
                             left: `${tooltipData.rect.right + 10}px`,
                             top: `${tooltipData.rect.top + tooltipData.rect.height / 2}px`,
-                            transform: `translateY(-50%)`,
-                            opacity: tooltipData ? 1 : 0,
+                            transform: `translateY(-50%) scale(${tooltipData ? 1 : 0.95})`,
+                            opacity: tooltipData ? 1 : 0
                         }}
                     >
                         <div className="space-y-1.5 font-sans text-left">
