@@ -194,6 +194,7 @@ export const WorkflowManager: React.FC = () => {
                     setSelectedFilePaths={setSelectedFilePaths}
                     userMessage=""
                     setError={setConfigError}
+                    showTypeManager={false}
                 />
             </div>
 

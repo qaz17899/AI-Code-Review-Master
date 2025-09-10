@@ -23,6 +23,7 @@ interface FileManagementAreaProps {
     setRecommendedPaths?: React.Dispatch<React.SetStateAction<Set<string>>>;
     isScoping?: boolean;
     onAiScoping?: () => Promise<void>;
+    showTypeManager?: boolean;
 }
 
 export const FileManagementArea: React.FC<FileManagementAreaProps> = (props) => {
@@ -30,6 +31,7 @@ export const FileManagementArea: React.FC<FileManagementAreaProps> = (props) => 
         files, setFiles, acceptedTypes, setAcceptedTypes, selectedFilePaths, setSelectedFilePaths,
         recommendedPaths, isScoping, onAiScoping,
     } = props;
+    const showTypeManager = props.showTypeManager !== false; // Default to true
 
     const [fileFilter, setFileFilter] = useState('');
     const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
@@ -93,21 +95,11 @@ export const FileManagementArea: React.FC<FileManagementAreaProps> = (props) => 
         }
     }, [setFiles, setSelectedFilePaths, props.setError, acceptedTypes]);
 
-    const getFilesInFolder = useCallback((folderPath: string): string[] => {
-        return files.filter(f => f.path.startsWith(`${folderPath}/`)).map(f => f.path);
-    }, [files]);
-
     const handleRemoveFile = (pathToRemove: string, isFolder: boolean) => {
-        const pathsToRemove = new Set<string>();
+        const pathsToRemove = new Set<string>([pathToRemove]);
         if (isFolder) {
-            getFilesInFolder(pathToRemove).forEach(p => pathsToRemove.add(p));
-            files.forEach(f => {
-                if(f.path === pathToRemove || f.path.startsWith(`${pathToRemove}/`)){
-                    pathsToRemove.add(f.path);
-                }
-            });
-        } else {
-            pathsToRemove.add(pathToRemove);
+            const filesInFolder = folderFileMap.get(pathToRemove) || [];
+            filesInFolder.forEach(p => pathsToRemove.add(p));
         }
 
         setFiles(prev => prev.filter(f => !pathsToRemove.has(f.path)));
@@ -121,7 +113,7 @@ export const FileManagementArea: React.FC<FileManagementAreaProps> = (props) => 
     const handleToggleFileSelection = (path: string, isFolder: boolean) => {
         setSelectedFilePaths(prev => {
             const newSet = new Set(prev);
-            const filesToToggle = isFolder ? getFilesInFolder(path) : [path];
+            const filesToToggle = isFolder ? (folderFileMap.get(path) || []) : [path];
             
             const shouldSelect = filesToToggle.some(f => !newSet.has(f));
 
@@ -219,7 +211,7 @@ export const FileManagementArea: React.FC<FileManagementAreaProps> = (props) => 
                     </div>
                 )}
                 <FileUpload onFilesChange={handleFilesChange} acceptedTypes={acceptedTypes} />
-                <FileTypeManager types={acceptedTypes} onChange={setAcceptedTypes} />
+                {showTypeManager && <FileTypeManager types={acceptedTypes} onChange={setAcceptedTypes} />}
             </div>
         </div>
     );
