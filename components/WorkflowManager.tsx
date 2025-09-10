@@ -2,12 +2,13 @@ import React, { useState, useCallback, useRef } from 'react';
 import type { AppFile, ReviewMode } from '../types';
 import { useApiSettings } from '../contexts/ApiSettingsContext';
 import { generateChatStream } from '../services/aiService';
-import { PROMPTS, WORKFLOW_STEP_PROMPT, WORKFLOW_MODES } from './constants';
+import { WORKFLOW_STEP_PROMPT, WORKFLOW_MODES } from './constants';
 import { parseDiffs, applyPatch } from '../utils/patch';
 import { zipAndDownloadFiles } from '../utils';
 import { FileManagementArea } from './FileManagementArea';
 import { WorkflowIcon, PlusIcon, TrashIcon, ChevronDownIcon, StopIcon, DownloadIcon, RefreshIcon, CheckIcon } from './icons';
 import { getModeIcon } from './ModeIcons';
+import { MODES } from '../config/modes';
 
 type WorkflowStatus = 'config' | 'running' | 'done' | 'stopped' | 'error';
 
@@ -81,7 +82,7 @@ export const WorkflowManager: React.FC = () => {
 
                     const masterPrompt = WORKFLOW_STEP_PROMPT
                         .replace(/{MODE_NAME}/g, mode)
-                        .replace('{MODE_PROMPT}', PROMPTS[mode]);
+                        .replace('{MODE_PROMPT}', MODES[mode].prompt);
                     
                     let responseText = '';
                     const stream = await generateChatStream({

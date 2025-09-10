@@ -1,7 +1,7 @@
 import React from 'react';
 import { XIcon, MasterIcon, UserIcon } from './icons';
 import type { ReviewMode } from '../types';
-import { MODE_DESCRIPTIONS, MODE_EXAMPLES, getModeIcon } from './ModeIcons';
+import { MODES } from '../config/modes';
 import { ModelMessage } from './ModelMessage';
 
 interface ModeExampleModalProps {
@@ -12,8 +12,9 @@ interface ModeExampleModalProps {
 export const ModeExampleModal: React.FC<ModeExampleModalProps> = ({ mode, onClose }) => {
   if (!mode) return null;
 
-  const example = MODE_EXAMPLES[mode];
-  const description = MODE_DESCRIPTIONS[mode];
+  const config = MODES[mode];
+  const example = config.example;
+  const Icon = config.icon;
 
   return (
     <div 
@@ -27,10 +28,10 @@ export const ModeExampleModal: React.FC<ModeExampleModalProps> = ({ mode, onClos
       >
         <header className="flex justify-between items-start p-4 border-b border-stone-300 dark:border-slate-700/80">
           <div className="flex items-center gap-3">
-            {getModeIcon(mode, 'h-8 w-8 text-[var(--accent-color)] flex-shrink-0')}
+            <Icon className="h-8 w-8 text-[var(--accent-color)] flex-shrink-0" />
             <div>
                 <h2 className="text-xl font-bold text-stone-900 dark:text-slate-100">{example.title}</h2>
-                <p className="text-sm text-stone-600 dark:text-slate-400">{description}</p>
+                <p className="text-sm text-stone-600 dark:text-slate-400">{config.description}</p>
             </div>
           </div>
           <button onClick={onClose} className="p-1 rounded-full text-stone-600 hover:bg-stone-300 dark:hover:bg-slate-700 transition-colors">

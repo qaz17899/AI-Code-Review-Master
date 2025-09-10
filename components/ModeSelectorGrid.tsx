@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { ReviewMode } from '../types';
-import { getModeIcon, MODE_DESCRIPTIONS } from './ModeIcons';
+import { getModeIcon } from './ModeIcons';
 import { InfoIcon } from './icons';
 import { useApiSettings } from '../contexts/ApiSettingsContext';
+import { MODES } from '../config/modes';
 
 const MODE_CATEGORIES: { title: string; modes: ReviewMode[] }[] = [
     {
@@ -67,7 +68,7 @@ const ModeButton: React.FC<{
                         </button>
                     </div>
                 </div>
-                <p className="text-sm text-stone-600 dark:text-slate-400">{MODE_DESCRIPTIONS[mode]}</p>
+                <p className="text-sm text-stone-600 dark:text-slate-400">{MODES[mode].description}</p>
             </div>
         </button>
     );

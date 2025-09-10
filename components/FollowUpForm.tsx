@@ -4,6 +4,7 @@ import type { AppFile, ApiSettings } from '../types';
 import { countInputTokens } from '../services/aiService';
 import { readFile, handleImagePaste } from '../utils';
 import { getFileIcon } from '../utils/fileTree';
+import { useDebouncedTokenCounter } from '../hooks/useDebouncedTokenCounter';
 
 export const FollowUpForm: React.FC<{
     onFollowUp: (files: AppFile[], message: string, images: string[]) => Promise<void>;
@@ -16,8 +17,6 @@ export const FollowUpForm: React.FC<{
     const [files, setFiles] = useState<AppFile[]>([]);
     const [message, setMessage] = useState('');
     const [pastedImages, setPastedImages] = useState<string[]>([]);
-    const [inputTokenCount, setInputTokenCount] = useState<number | null>(null);
-    const [isCountingTokens, setIsCountingTokens] = useState(false);
     
     const fileInputRef = useRef<HTMLInputElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -30,28 +29,7 @@ export const FollowUpForm: React.FC<{
         }
     }, [message, pastedImages]);
 
-    // Debounced token counting
-    useEffect(() => {
-        const handler = setTimeout(async () => {
-            const hasInput = files.length > 0 || pastedImages.length > 0 || message.trim();
-            if (!hasInput) {
-                setInputTokenCount(null);
-                return;
-            }
-            setIsCountingTokens(true);
-            try {
-                const count = await countInputTokens(provider, files, message, pastedImages, settings);
-                setInputTokenCount(count);
-            } catch (error) {
-                console.error("Error counting tokens for follow-up:", error);
-                setInputTokenCount(null);
-            } finally {
-                setIsCountingTokens(false);
-            }
-        }, 500);
-
-        return () => clearTimeout(handler);
-    }, [files, message, pastedImages, settings, provider]);
+    const [inputTokenCount, isCountingTokens] = useDebouncedTokenCounter(provider, files, message, pastedImages, settings);
 
     const processAndSetFiles = useCallback(async (fileList: FileList | File[]) => {
         const selectedFiles = Array.from(fileList);

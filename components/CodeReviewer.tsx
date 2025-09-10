@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { ResultDisplay } from './ResultDisplay';
 import { generateChatStream, countResponseTokens, countInputTokens } from '../services/aiService';
 import { scopeRelevantFiles } from '../services/geminiService';
-import { PROMPTS, DIFF_INSTRUCTION } from './constants';
+import { DIFF_INSTRUCTION } from './constants';
 import type { ReviewMode, ChatMessage, AppFile, Conversation } from '../types';
 import { StarIcon, MasterIcon } from './icons';
 import { useConversation } from '../contexts/ConversationContext';
@@ -11,9 +11,10 @@ import { FileManagementArea } from './FileManagementArea';
 import { PromptInputArea } from './PromptInputArea';
 import { useApiSettings } from '../contexts/ApiSettingsContext';
 import { LoadingDisplay } from './LoadingDisplay';
-import { MODE_DESCRIPTIONS } from './ModeIcons';
+import { MODES } from '../config/modes';
 import { ModeExampleModal } from './ModeExampleModal';
 import { WorkflowManager } from './WorkflowManager';
+import { useDebouncedTokenCounter } from '../hooks/useDebouncedTokenCounter';
 
 
 const ALL_SUPPORTED_TYPES = ['.py', '.yml', '.yaml', '.ts', '.tsx', '.js', '.jsx', '.json', '.html', '.css', '.zip'];
@@ -34,8 +35,6 @@ export const CodeReviewer: React.FC = () => {
   const [recommendedPaths, setRecommendedPaths] = useState<Set<string>>(new Set());
   const [isScoping, setIsScoping] = useState(false);
 
-  const [inputTokenCount, setInputTokenCount] = useState<number | null>(null);
-  const [isCountingTokens, setIsCountingTokens] = useState(false);
   const { settings } = useApiSettings();
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -44,6 +43,10 @@ export const CodeReviewer: React.FC = () => {
   const conversation = activeConversation;
   const mode = conversation?.mode || 'REVIEW';
   const provider = conversation?.provider || 'gemini';
+
+  const filesToCount = useMemo(() => files.filter(f => selectedFilePaths.has(f.path)), [files, selectedFilePaths]);
+  const [inputTokenCount, isCountingTokens] = useDebouncedTokenCounter(provider, filesToCount, userMessage, pastedImages, settings);
+
 
   const isSubmitting = submittingConversationId !== null;
   const onUpdateConversation = (conversation: Conversation) => {
@@ -62,40 +65,11 @@ export const CodeReviewer: React.FC = () => {
         setPastedImages([]);
         setSelectedFilePaths(new Set());
         setRecommendedPaths(new Set());
-        setInputTokenCount(null);
       }
       // Update the ref to track the current conversation ID for the next run
       prevConversationIdRef.current = conversation?.id;
     }
   }, [conversation]);
-  
-  // Debounced token counting for initial prompt
-  useEffect(() => {
-    const filesToCount = files.filter(f => selectedFilePaths.has(f.path));
-    const hasInput = filesToCount.length > 0 || pastedImages.length > 0 || userMessage.trim();
-    
-    if (!hasInput) {
-        setInputTokenCount(null);
-        return;
-    }
-
-    const handler = setTimeout(async () => {
-        setIsCountingTokens(true);
-        try {
-            const count = await countInputTokens(provider, filesToCount, userMessage, pastedImages, settings);
-            setInputTokenCount(count);
-        } catch (error) {
-            console.error("Error counting tokens for input:", error);
-            setInputTokenCount(null);
-        } finally {
-            setIsCountingTokens(false);
-        }
-    }, 500);
-
-    return () => {
-        clearTimeout(handler);
-    };
-  }, [selectedFilePaths, files, userMessage, pastedImages, settings, provider]);
   
   // Effect to filter files when accepted types change
   useEffect(() => {
@@ -249,7 +223,7 @@ export const CodeReviewer: React.FC = () => {
 
     const startTime = performance.now();
     try {
-        const masterPromptTemplate = PROMPTS[mode];
+        const masterPromptTemplate = MODES[mode].prompt;
         const masterPrompt = settings.forceDiff ? `${masterPromptTemplate}\n\n${DIFF_INSTRUCTION}` : masterPromptTemplate;
         const promptTokenCount = await countInputTokens(provider, filesToSubmit, messageToSend, imagesToSend, settings);
         const signal = abortControllerRef.current.signal;

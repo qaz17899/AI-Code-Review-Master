@@ -6,41 +6,10 @@ import type { ReviewMode } from './types';
 import { useConversation } from './contexts/ConversationContext';
 import { SettingsModal } from './components/SettingsModal';
 import { useApiSettings } from './contexts/ApiSettingsContext';
+import { MODES } from './config/modes';
 
 
 export type Theme = 'light' | 'dark';
-
-type ModeTheme = {
-    gradient: { c1: string, c2: string };
-    accent: { color: string, hover: string, from: string, to: string };
-};
-
-const MODE_CONFIG: Record<ReviewMode, ModeTheme> = {
-    // Quality & Review
-    REVIEW:       { gradient: { c1: 'rgba(29, 78, 216, 0.15)',  c2: 'rgba(107, 33, 168, 0.15)' }, accent: { color: '#f59e0b', hover: '#fbbf24', from: '#fbbf24', to: '#f97316' } },
-    REFACTOR:     { gradient: { c1: 'rgba(5, 150, 105, 0.15)',  c2: 'rgba(13, 148, 136, 0.15)' },  accent: { color: '#10b981', hover: '#34d399', from: '#34d399', to: '#2dd4bf' } },
-    SIMPLIFY:     { gradient: { c1: 'rgba(101, 163, 13, 0.15)', c2: 'rgba(22, 163, 74, 0.15)' },   accent: { color: '#84cc16', hover: '#a3e635', from: '#a3e635', to: '#bef264' } },
-    DOCS:         { gradient: { c1: 'rgba(107, 114, 128, 0.15)',c2: 'rgba(156, 163, 175, 0.15)'}, accent: { color: '#6b7280', hover: '#9ca3af', from: '#9ca3af', to: '#d1d5db' } },
-    CONSOLIDATE:  { gradient: { c1: 'rgba(8, 145, 178, 0.15)',  c2: 'rgba(15, 118, 110, 0.15)' },   accent: { color: '#0891b2', hover: '#06b6d4', from: '#06b6d4', to: '#2dd4bf' } },
-    // Robustness & Security
-    BUGFIX:       { gradient: { c1: 'rgba(190, 18, 60, 0.15)',   c2: 'rgba(234, 88, 12, 0.15)' },  accent: { color: '#ef4444', hover: '#f87171', from: '#f87171', to: '#fb7185' } },
-    OPTIMIZE:     { gradient: { c1: 'rgba(37, 99, 235, 0.15)',  c2: 'rgba(79, 70, 229, 0.15)' },  accent: { color: '#3b82f6', hover: '#60a5fa', from: '#60a5fa', to: '#818cf8' } },
-    TESTER:       { gradient: { c1: 'rgba(202, 138, 4, 0.15)',  c2: 'rgba(245, 158, 11, 0.15)' }, accent: { color: '#eab308', hover: '#facc15', from: '#facc15', to: '#fde047' } },
-    SECURITY:     { gradient: { c1: 'rgba(249, 115, 22, 0.15)', c2: 'rgba(220, 38, 38, 0.15)' },  accent: { color: '#f97316', hover: '#fb923c', from: '#fb923c', to: '#fdba74' } },
-    // System Design
-    DESIGN:       { gradient: { c1: 'rgba(71, 85, 105, 0.15)',  c2: 'rgba(100, 116, 139, 0.15)' },accent: { color: '#64748b', hover: '#94a3b8', from: '#94a3b8', to: '#cbd5e1' } },
-    IMPLEMENT:    { gradient: { c1: 'rgba(79, 70, 229, 0.15)',  c2: 'rgba(124, 58, 237, 0.15)' }, accent: { color: '#4f46e5', hover: '#6366f1', from: '#6366f1', to: '#818cf8' } },
-    SCALE:        { gradient: { c1: 'rgba(14, 165, 233, 0.15)', c2: 'rgba(59, 130, 246, 0.15)' }, accent: { color: '#0ea5e9', hover: '#38bdf8', from: '#38bdf8', to: '#7dd3fc' } },
-    VERIFY:       { gradient: { c1: 'rgba(22, 163, 74, 0.15)',  c2: 'rgba(132, 204, 22, 0.15)' },  accent: { color: '#22c55e', hover: '#4ade80', from: '#4ade80', to: '#86efac' } },
-    // Creative & Q&A
-    'Q&A':        { gradient: { c1: 'rgba(14, 165, 233, 0.15)', c2: 'rgba(6, 182, 212, 0.15)' },   accent: { color: '#06b6d4', hover: '#22d3ee', from: '#22d3ee', to: '#67e8f9' } },
-    DESIGNER:     { gradient: { c1: 'rgba(147, 51, 234, 0.15)', c2: 'rgba(219, 39, 119, 0.15)' }, accent: { color: '#a855f7', hover: '#c084fc', from: '#c084fc', to: '#d8b4fe' } },
-    ENHANCE:      { gradient: { c1: 'rgba(192, 38, 211, 0.15)', c2: 'rgba(225, 29, 72, 0.15)' },   accent: { color: '#ec4899', hover: '#f472b6', from: '#f472b6', to: '#f87171' } },
-    BALANCE:      { gradient: { c1: 'rgba(13, 148, 136, 0.15)', c2: 'rgba(6, 182, 212, 0.15)' },   accent: { color: '#14b8a6', hover: '#2dd4bf', from: '#2dd4bf', to: '#06b6d4' } },
-    POLISH:       { gradient: { c1: 'rgba(219, 39, 119, 0.15)', c2: 'rgba(236, 72, 153, 0.15)' }, accent: { color: '#f43f5e', hover: '#fb7185', from: '#fb7185', to: '#f87171' } },
-    // Automation
-    WORKFLOW:     { gradient: { c1: 'rgba(13, 148, 136, 0.15)', c2: 'rgba(8, 145, 178, 0.15)' },   accent: { color: '#0d9488', hover: '#14b8a6', from: '#14b8a6', to: '#0891b2' } },
-};
 
 const App: React.FC = () => {
   const [theme, setTheme] = useState<Theme>('dark');
@@ -68,7 +37,7 @@ const App: React.FC = () => {
   useEffect(() => {
       const root = document.documentElement;
       const mode = activeConversation?.mode || 'REVIEW';
-      const themeConfig = MODE_CONFIG[mode] || MODE_CONFIG['REVIEW'];
+      const themeConfig = MODES[mode]?.theme || MODES['REVIEW'].theme;
       
       root.style.setProperty('--gradient-color-1', themeConfig.gradient.c1);
       root.style.setProperty('--gradient-color-2', themeConfig.gradient.c2);
