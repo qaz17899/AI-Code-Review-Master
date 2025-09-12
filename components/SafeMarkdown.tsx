@@ -4,8 +4,11 @@ import { processInlineFormatting } from '../lib/inlineFormatting';
 const MemoizedSafeMarkdown: React.FC<{ text: string; isStreaming: boolean; }> = ({ text, isStreaming }) => {
     const elements = React.useMemo(() => {
         if (!text) return [];
-
+ 
         const elements: React.ReactNode[] = [];
+        // A function to parse a table row string like "| a | b |" into ["a", "b"]
+        const parseTableRow = (line: string) => line.split('|').slice(1, -1).map(s => s.trim());
+ 
         let currentList: { type: 'ul' | 'ol'; items: React.ReactNode[] } | null = null;
         let currentParagraphLines: string[] = [];
         const keyPrefix = Math.random().toString(36).substring(7);
@@ -39,11 +42,55 @@ const MemoizedSafeMarkdown: React.FC<{ text: string; isStreaming: boolean; }> = 
             }
         };
 
-        const lines = text.split('\n');
-
-        lines.forEach((line, index) => {
-            const key = `${keyPrefix}-${index}`;
+        const lines = text.split('\n'); 
+        // Use a for loop to allow manually advancing the index
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            const key = `${keyPrefix}-${i}`;
             const trimmedLine = line.trim();
+
+            // --- NEW: Table detection logic ---
+            const isTableSeparator = (l: string) => /^\|?(\s*:?-+:?\s*\|)+/.test(l);
+            const isTableRow = (l: string) => l.trim().startsWith('|') && l.trim().endsWith('|');
+
+            // Check if the NEXT line is a table separator
+            if (i + 1 < lines.length && isTableSeparator(lines[i + 1]) && isTableRow(line)) {
+                flushParagraph();
+                flushList();
+
+                const headerLine = line;
+                const separatorLine = lines[i + 1];
+                const headerCells = parseTableRow(headerLine);
+                
+                // Extract alignment from separator
+                const alignments = parseTableRow(separatorLine).map(cell => {
+                    if (cell.startsWith(':') && cell.endsWith(':')) return 'center';
+                    if (cell.endsWith(':')) return 'right';
+                    if (cell.startsWith(':')) return 'left';
+                    return 'left';
+                });
+
+                const bodyRows = [];
+                let j = i + 2; // Start from the line after the separator
+                while (j < lines.length && isTableRow(lines[j])) {
+                    bodyRows.push(parseTableRow(lines[j]));
+                    j++;
+                }
+
+                elements.push(
+                    <div key={`table-wrapper-${key}`} className="my-4 overflow-x-auto custom-scrollbar">
+                        <table key={`table-${key}`} className="w-full text-sm text-left border-collapse">
+                            <thead>
+                                <tr className="border-b-2 border-stone-400 dark:border-slate-600">{headerCells.map((cell, idx) => <th key={idx} className="p-3 font-semibold text-stone-900 dark:text-slate-200" style={{ textAlign: alignments[idx] as any }}>{processInlineFormatting(cell)}</th>)}</tr>
+                            </thead>
+                            <tbody>{bodyRows.map((row, rowIdx) => <tr key={rowIdx} className="border-b border-stone-300 dark:border-slate-700/50">{row.map((cell, cellIdx) => <td key={cellIdx} className="p-3 align-top text-stone-700 dark:text-slate-300" style={{ textAlign: alignments[cellIdx] as any }}>{processInlineFormatting(cell)}</td>)}</tr>)}</tbody>
+                        </table>
+                    </div>
+                );
+
+                i = j - 1; // Move index past the processed table rows
+                continue; // Continue to the next line
+            }
 
             const orderedMatch = trimmedLine.match(/^(\d+)\.\s+(.*)/);
             const unorderedMatch = trimmedLine.match(/^\*\s+(.*)/);
@@ -89,7 +136,7 @@ const MemoizedSafeMarkdown: React.FC<{ text: string; isStreaming: boolean; }> = 
                     flushParagraph();
                 }
             }
-        });
+        }
 
         flushParagraph();
         flushList();
