@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo, FormEvent, useCallback } from 'react';
 import type { Conversation } from '../types';
-import { PlusIcon, MessageSquareIcon, TrashIcon, EditIcon, SearchIcon, XIcon, ChevronDownIcon, FolderIcon, SpinnerIcon } from './icons';
+import { PlusIcon, TrashIcon, EditIcon, SearchIcon, XIcon, ChevronDownIcon, FolderIcon, SpinnerIcon } from './icons';
 import { useConversation } from '../contexts/ConversationContext';
+import { getModeIcon } from './ModeIcons';
 import { MODES } from '../config/modes';
 import { useApiSettings } from '../contexts/ApiSettingsContext';
 import Portal from './Portal';
@@ -124,8 +125,8 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
     ), [conversationsForCurrentWorkspace, searchQuery]);
 
     return (
-        <aside className={`flex-shrink-0 bg-stone-100/75 dark:bg-slate-900/75 backdrop-blur-xl border-r border-stone-300 dark:border-slate-800/50 flex flex-col transition-all duration-300 ease-in-out dark:ring-1 dark:ring-inset dark:ring-white/10 ${isOpen ? 'w-64' : 'w-0'}`}>
-            <div className={`p-2 border-b border-stone-300 dark:border-slate-800/50 transition-opacity duration-200 flex flex-col ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
+        <aside className={`flex-shrink-0 bg-stone-100/75 dark:bg-slate-900/75 backdrop-blur-xl border-r border-stone-300 dark:border-slate-800/50 flex flex-col transition-all duration-300 ease-in-out dark:ring-1 dark:ring-inset dark:ring-white/10 ${isOpen ? 'w-64' : 'w-0 overflow-x-hidden'}`}>
+            <div className={`p-2 border-b border-stone-300 dark:border-slate-800/50 transition-opacity duration-200 flex flex-col ${isOpen ? 'opacity-100 delay-200' : 'opacity-0'}`}>
                 <div className="relative">
                     <button ref={workspaceButtonRef} onClick={() => setIsWorkspaceOpen(!isWorkspaceOpen) } className="w-full flex items-center justify-between p-2 rounded-lg bg-stone-50/50 dark:bg-slate-800/50 hover:bg-stone-100 dark:hover:bg-slate-800/80 border border-stone-400 dark:border-slate-700 transition-colors">
                         <div className="flex items-center gap-2 min-w-0">
@@ -191,7 +192,7 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                         onChange={(e) => setNewWorkspaceName(e.target.value)}
                                         placeholder="新的工作區名稱..."
                                         autoFocus
-                                        className="flex-grow min-w-0 bg-stone-50/50 dark:bg-slate-800/50 border border-stone-400 dark:border-slate-700 rounded-md px-2 py-1 text-sm focus:ring-1 focus:ring-[var(--accent-color)] focus:border-[var(--accent-color)] outline-none transition"
+                                        className="flex-grow min-w-0 bg-stone-50/50 dark:bg-slate-800/50 border border-stone-400 dark:border-slate-700 rounded-md px-2 py-1 text-sm focus:border-[var(--accent-color)] outline-none transition"
                                     />
                                     <button type="submit" className="p-1.5 rounded-md text-stone-600 dark:text-slate-300 bg-stone-200 hover:bg-stone-300 dark:bg-slate-700 dark:hover:bg-slate-600 transition-colors" aria-label="新增工作區">
                                         <PlusIcon className="h-4 w-4" />
@@ -211,7 +212,7 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                     </div>
                 </div>
             </div>
-            <div className={`w-full flex flex-col h-full transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
+            <div className={`w-full flex flex-col h-full transition-opacity duration-200 ${isOpen ? 'opacity-100 delay-200' : 'opacity-0'}`}>
                 <div className="flex-shrink-0 p-2 border-b border-stone-300 dark:border-slate-800/50">
                     <button
                         onClick={handleNew}
@@ -230,7 +231,7 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                             placeholder="搜尋對話..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-stone-50/50 dark:bg-slate-800/50 border border-stone-400 dark:border-slate-700 rounded-lg pl-9 pr-8 py-1.5 text-sm focus:ring-1 focus:ring-[var(--accent-color)] focus:border-[var(--accent-color)] outline-none transition"
+                            className="w-full bg-stone-50/50 dark:bg-slate-800/50 border border-stone-400 dark:border-slate-700 rounded-lg pl-9 pr-8 py-1.5 text-sm focus:border-[var(--accent-color)] outline-none transition"
                         />
                          {searchQuery && (
                             <button onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-stone-500 hover:text-stone-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors">
@@ -352,7 +353,7 @@ const ConversationItem = React.memo<ConversationItemProps>(({
                 {isSubmitting ? (
                     <SpinnerIcon className="h-5 w-5 flex-shrink-0 ml-1 animate-spin text-[var(--accent-color)]" />
                 ) : (
-                    <MessageSquareIcon className="h-5 w-5 flex-shrink-0 ml-1" />
+                    getModeIcon(conv.mode, "h-5 w-5 flex-shrink-0 ml-1")
                 )}
                 {isEditing ? (
                     <input
@@ -363,7 +364,7 @@ const ConversationItem = React.memo<ConversationItemProps>(({
                         onBlur={() => onRename(conv.id)}
                         onKeyDown={(e) => onKeyDown(e, conv.id)}
                         onClick={(e) => e.stopPropagation()}
-                        className="flex-grow bg-transparent text-sm font-medium focus:outline-none p-0 text-stone-900 dark:text-slate-200 focus:ring-1 focus:ring-[var(--accent-color)] rounded"
+                        className="flex-grow bg-transparent text-sm font-medium focus:outline-none p-0 text-stone-900 dark:text-slate-200 rounded"
                     />
                 ) : (
                     <>
@@ -375,14 +376,14 @@ const ConversationItem = React.memo<ConversationItemProps>(({
                             <div className="flex-shrink-0 flex items-center opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                                 <button
                                     onClick={(e) => onStartEditing(e, conv)}
-                                    className={`p-1.5 rounded-md transition-all duration-150 hover:scale-110 active:scale-95 ${isActive ? 'text-white/70 hover:text-white hover:bg-white/20' : 'text-stone-600 dark:text-slate-400 hover:text-stone-800 dark:hover:text-slate-300 hover:bg-black/10 dark:hover:bg-white/10'}`}
+                                    className={`p-1.5 rounded-md transition-all duration-150 transform-gpu hover:scale-110 active:scale-95 ${isActive ? 'text-white/70 hover:text-white hover:bg-white/20' : 'text-stone-600 dark:text-slate-400 hover:text-stone-800 dark:hover:text-slate-300 hover:bg-black/10 dark:hover:bg-white/10'}`}
                                     aria-label={`重新命名 ${conv.title}`}
                                 >
                                     <EditIcon className="h-4 w-4" />
                                 </button>
                                 <button 
                                     onClick={(e) => onDelete(e, conv.id)}
-                                    className={`p-1.5 rounded-md transition-all duration-150 hover:scale-110 active:scale-95 ${isActive ? 'text-white/70 hover:text-red-300 hover:bg-white/20' : 'text-stone-600 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10'}`}
+                                    className={`p-1.5 rounded-md transition-all duration-150 transform-gpu hover:scale-110 active:scale-95 ${isActive ? 'text-white/70 hover:text-red-300 hover:bg-white/20' : 'text-stone-600 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10'}`}
                                     aria-label={`刪除 ${conv.title}`}
                                 >
                                     <TrashIcon className="h-4 w-4" />

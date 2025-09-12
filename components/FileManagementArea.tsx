@@ -15,11 +15,10 @@ interface FileManagementAreaProps {
     acceptedTypes: string[];
     setAcceptedTypes: React.Dispatch<React.SetStateAction<string[]>>;
     selectedFilePaths: Set<string>;
-    setUserSelection: React.Dispatch<React.SetStateAction<Set<string>>>;
     setSelectedFilePaths: React.Dispatch<React.SetStateAction<Set<string>>>;
     userMessage: string;
     setError: React.Dispatch<React.SetStateAction<string>>;
-    // AI Scoping props are optional for reusability
+    // AI Scoping props are now required but can be undefined for non-gemini providers
     recommendedPaths?: Set<string>;
     setRecommendedPaths?: React.Dispatch<React.SetStateAction<Set<string>>>;
     isScoping?: boolean;
@@ -29,11 +28,11 @@ interface FileManagementAreaProps {
 
 export const FileManagementArea: React.FC<FileManagementAreaProps> = (props) => {
     const {
-        files, setFiles, acceptedTypes, setAcceptedTypes, selectedFilePaths, setUserSelection, setSelectedFilePaths,
-        recommendedPaths, isScoping, onAiScoping,
+        files, setFiles, acceptedTypes, setAcceptedTypes, selectedFilePaths, setSelectedFilePaths,
+        recommendedPaths, isScoping, onAiScoping, setError,
     } = props;
     const showTypeManager = props.showTypeManager !== false; // Default to true
-
+    
     const [fileFilter, setFileFilter] = useState('');
     const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
     const fileTree = useMemo(() => buildFileTree(files), [files]);
@@ -74,7 +73,7 @@ export const FileManagementArea: React.FC<FileManagementAreaProps> = (props) => 
 
     const handleFilesChange = useCallback(async (payloads: UploadPayload[]) => {
         try {
-            const newFiles = await processUploadedFiles(payloads, acceptedTypes, props.setError);
+            const newFiles = await processUploadedFiles(payloads, acceptedTypes, setError);
             if (newFiles.length === 0 && payloads.length > 0) {
                 // This can happen if all uploaded files were filtered out.
                 return;
@@ -87,8 +86,6 @@ export const FileManagementArea: React.FC<FileManagementAreaProps> = (props) => 
             });
             
             const newFilePaths = newFiles.map(file => file.path);
-            // Update both user's intent and the visible selection
-            setUserSelection(prevSelection => new Set([...prevSelection, ...newFilePaths]));
             setSelectedFilePaths(prevSelected => {
                 const newSelected = new Set(prevSelected);
                 newFilePaths.forEach(path => newSelected.add(path));
@@ -96,9 +93,9 @@ export const FileManagementArea: React.FC<FileManagementAreaProps> = (props) => 
             });
         } catch (err) {
             console.error("Error reading files:", err);
-            props.setError("讀取檔案時發生錯誤。");
+            setError("讀取檔案時發生錯誤。");
         }
-    }, [setFiles, setUserSelection, setSelectedFilePaths, props.setError, acceptedTypes]);
+    }, [setFiles, setSelectedFilePaths, setError, acceptedTypes]);
 
     const handleRemoveFile = (pathToRemove: string, isFolder: boolean) => {
         const pathsToRemove = new Set<string>([pathToRemove]);
@@ -108,12 +105,6 @@ export const FileManagementArea: React.FC<FileManagementAreaProps> = (props) => 
         }
 
         setFiles(prev => prev.filter(f => !pathsToRemove.has(f.path)));
-        // Also remove from user's intent
-        setUserSelection(prev => {
-            const newSet = new Set(prev);
-            pathsToRemove.forEach(p => newSet.delete(p));
-            return newSet;
-        });
         setSelectedFilePaths(prev => {
           const newSet = new Set(prev);
           pathsToRemove.forEach(p => newSet.delete(p));
@@ -122,8 +113,7 @@ export const FileManagementArea: React.FC<FileManagementAreaProps> = (props) => 
     };
 
     const handleToggleFileSelection = (path: string, isFolder: boolean) => {
-        // This action directly reflects user intent, so we update `userSelection`
-        setUserSelection(prev => {
+        setSelectedFilePaths(prev => {
             const newSet = new Set(prev);
             const filesToToggle = isFolder ? (folderFileMap.get(path) || []) : [path];
             
@@ -149,21 +139,15 @@ export const FileManagementArea: React.FC<FileManagementAreaProps> = (props) => 
 
     const handleToggleSelectAll = () => {
         const visibleFilePaths = visibleFiles.map(f => f.path);
-        if (allVisibleSelected) {
-            // Deselect all visible files
-            setUserSelection(prev => {
-                const newSet = new Set(prev);
+        setSelectedFilePaths(prev => {
+            const newSet = new Set(prev);
+            if (allVisibleSelected) {
                 visibleFilePaths.forEach(path => newSet.delete(path));
-                return newSet;
-            });
-        } else {
-            // Select all visible files
-            setUserSelection(prev => {
-                const newSet = new Set(prev);
+            } else {
                 visibleFilePaths.forEach(path => newSet.add(path));
-                return newSet;
-            });
-        }
+            }
+            return newSet;
+        });
     };
 
     const handleToggleFolder = (folderPath: string) => {
@@ -190,7 +174,7 @@ export const FileManagementArea: React.FC<FileManagementAreaProps> = (props) => 
                     <div className="bg-stone-200 dark:bg-slate-800/60 border border-stone-300 dark:border-slate-700 rounded-lg p-2 max-h-72 flex flex-col">
                         <div className="relative mb-2 flex-shrink-0">
                             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-stone-500 dark:text-slate-500 pointer-events-none" />
-                            <input type="text" placeholder="搜尋檔案..." value={fileFilter} onChange={(e) => setFileFilter(e.target.value)} className="w-full bg-stone-300/50 dark:bg-slate-900/50 border border-stone-400 dark:border-slate-700 rounded-lg pl-10 pr-8 py-2 text-sm text-stone-800 dark:text-slate-200 focus:ring-1 focus:ring-[var(--accent-color)] focus:border-[var(--accent-color)] outline-none transition" />
+                            <input type="text" placeholder="搜尋檔案..." value={fileFilter} onChange={(e) => setFileFilter(e.target.value)} className="w-full bg-stone-300/50 dark:bg-slate-900/50 border border-stone-400 dark:border-slate-700 rounded-lg pl-10 pr-8 py-2 text-sm text-stone-800 dark:text-slate-200 focus:border-[var(--accent-color)] outline-none transition" />
                             {fileFilter && ( <button onClick={() => setFileFilter('')} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-stone-500 dark:text-slate-500 hover:text-stone-700 dark:hover:text-slate-300" aria-label="Clear search"> <XIcon className="h-4 w-4" /> </button> )}
                         </div>
                         <div className="flex-grow overflow-y-auto custom-scrollbar">

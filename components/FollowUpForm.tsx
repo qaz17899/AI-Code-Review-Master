@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { PaperclipIcon, SendIcon, XIcon } from './icons';
 import type { AppFile, ApiSettings } from '../types';
-import { countInputTokens } from '../services/aiService';
 import { processUploadedFiles, handleImagePaste, type UploadPayload } from '../utils';
 import { getFileIcon } from '../utils/fileTree';
 import { TokenDisplay } from './TokenDisplay';
@@ -82,7 +81,7 @@ export const FollowUpForm: React.FC<{
     };
 
     return (
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
             <form onSubmit={handleSubmit} className="flex flex-col bg-stone-100/75 dark:bg-slate-900/75 backdrop-blur-xl border border-stone-400/80 dark:border-slate-700/80 rounded-xl p-2 shadow-2xl shadow-black/20 dark:shadow-black/40">
                 {(pastedImages.length > 0 || files.length > 0) && (
                     <div className="p-2 border-b border-stone-300 dark:border-slate-700/60 space-y-2">
@@ -116,7 +115,7 @@ export const FollowUpForm: React.FC<{
                     <button type="button" onClick={() => fileInputRef.current?.click()} className="p-2 text-stone-600 dark:text-slate-400 hover:text-[var(--accent-color)] hover:bg-stone-300/50 dark:hover:bg-slate-700/50 rounded-lg transition-all flex-shrink-0 transform-gpu hover:scale-110 active:scale-95" aria-label="附加檔案">
                         <PaperclipIcon className="h-6 w-6" />
                     </button>
-                    <textarea ref={textareaRef} className="w-full bg-transparent text-stone-900 dark:text-slate-200 placeholder-stone-500 dark:placeholder-slate-500 focus:outline-none resize-none max-h-40 custom-scrollbar focus:ring-2 focus:ring-[var(--accent-color)] rounded-md py-1" rows={1} placeholder="補充說明、貼上圖片或提出具體問題..." value={message} onChange={(e) => setMessage(e.target.value)} onPaste={onPaste} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(e); } }} />
+                    <textarea ref={textareaRef} className="w-full bg-transparent text-stone-900 dark:text-slate-200 placeholder:text-stone-500 dark:placeholder:text-slate-500 focus:outline-none resize-none max-h-40 custom-scrollbar rounded-md p-2 focus:ring-2 focus:ring-[var(--accent-color)]/50 transition-shadow" rows={1} placeholder="補充說明、貼上圖片或提出具體問題..." value={message} onChange={(e) => setMessage(e.target.value)} onPaste={onPaste} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(e); } }} />
                     <div className="flex-shrink-0 text-xs text-stone-500 dark:text-slate-500 flex items-center gap-1.5">
                         <TokenDisplay isCounting={isCountingTokens} tokenCount={inputTokenCount} />
                     </div>

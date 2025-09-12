@@ -76,7 +76,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                            type="password"
                            value={localSettings.geminiApiKey}
                            onChange={(e) => setLocalSettings(prev => ({ ...prev, geminiApiKey: e.target.value }))}
-                           className="w-full bg-stone-200 dark:bg-slate-900/80 border border-stone-400 dark:border-slate-700 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-[var(--accent-color)]/50 focus:border-[var(--accent-color)] outline-none transition-all"
+                           className="w-full bg-stone-200 dark:bg-slate-900/80 border border-stone-400 dark:border-slate-700 rounded-md px-3 py-2 text-sm focus:border-[var(--accent-color)] outline-none transition-all"
                            placeholder="若留空，則使用環境變數中的金鑰"
                          />
                      </div>
@@ -87,7 +87,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                            type="text"
                            value={localSettings.geminiProxyUrl}
                            onChange={(e) => setLocalSettings(prev => ({ ...prev, geminiProxyUrl: e.target.value }))}
-                           className="w-full bg-stone-200 dark:bg-slate-900/80 border border-stone-400 dark:border-slate-700 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-[var(--accent-color)]/50 focus:border-[var(--accent-color)] outline-none transition-all"
+                           className="w-full bg-stone-200 dark:bg-slate-900/80 border border-stone-400 dark:border-slate-700 rounded-md px-3 py-2 text-sm focus:border-[var(--accent-color)] outline-none transition-all"
                            placeholder="可選。若留空則使用官方 API 端點。"
                          />
                      </div>
@@ -115,7 +115,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                            type="password"
                            value={localSettings.openaiApiKey}
                            onChange={(e) => setLocalSettings(prev => ({ ...prev, openaiApiKey: e.target.value }))}
-                           className="w-full bg-stone-200 dark:bg-slate-900/80 border border-stone-400 dark:border-slate-700 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-[var(--accent-color)]/50 focus:border-[var(--accent-color)] outline-none transition-all"
+                           className="w-full bg-stone-200 dark:bg-slate-900/80 border border-stone-400 dark:border-slate-700 rounded-md px-3 py-2 text-sm focus:border-[var(--accent-color)] outline-none transition-all"
                            placeholder="sk-..."
                          />
                      </div>
@@ -126,7 +126,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                            type="text"
                            value={localSettings.openaiProxyUrl}
                            onChange={(e) => setLocalSettings(prev => ({ ...prev, openaiProxyUrl: e.target.value }))}
-                           className="w-full bg-stone-200 dark:bg-slate-900/80 border border-stone-400 dark:border-slate-700 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-[var(--accent-color)]/50 focus:border-[var(--accent-color)] outline-none transition-all"
+                           className="w-full bg-stone-200 dark:bg-slate-900/80 border border-stone-400 dark:border-slate-700 rounded-md px-3 py-2 text-sm focus:border-[var(--accent-color)] outline-none transition-all"
                            placeholder="https://api.openai.com/v1"
                          />
                           <p className="text-xs text-stone-500 dark:text-slate-500 mt-1">可選。若留空則使用官方預設端點。</p>

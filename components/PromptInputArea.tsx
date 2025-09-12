@@ -44,7 +44,7 @@ export const PromptInputArea: React.FC<PromptInputAreaProps> = (props) => {
                         ))}
                     </div>
                 )}
-                <textarea className="w-full p-3 bg-stone-200 dark:bg-slate-800/60 border-2 border-stone-300 dark:border-slate-700 rounded-lg text-stone-800 dark:text-slate-200 focus:ring-2 focus:ring-[var(--accent-color)] focus:border-[var(--accent-color)] outline-none transition custom-scrollbar" rows={4} placeholder={props.placeholder} value={props.userMessage} onChange={(e) => props.setUserMessage(e.target.value)} onPaste={onPaste} />
+                <textarea className="w-full p-3 bg-stone-200 dark:bg-slate-800/60 border-2 border-stone-300 dark:border-slate-700 rounded-lg text-stone-800 dark:text-slate-200 focus:border-[var(--accent-color)] outline-none transition custom-scrollbar" rows={4} placeholder={props.placeholder} value={props.userMessage} onChange={(e) => props.setUserMessage(e.target.value)} onPaste={onPaste} />
                 <div className="absolute bottom-3 right-3 text-xs text-stone-500 dark:text-slate-500 flex items-center gap-1.5">
                     <TokenDisplay isCounting={props.isCountingTokens} tokenCount={props.inputTokenCount} />
                 </div>

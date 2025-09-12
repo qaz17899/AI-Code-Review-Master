@@ -82,12 +82,12 @@ export const ModelMessage: React.FC<{
                 const lang = langMatch ? langMatch[1] : 'plaintext';
                 const code = codeBlock.substring(1); // remove initial newline
                 return (
-                    <div key={stableKey} className="relative group my-4 bg-stone-300/40 dark:bg-slate-900/70 rounded-lg border border-stone-400 dark:border-slate-700/80">
-                        <div className="flex justify-between items-center px-4 py-2 bg-stone-300/70 dark:bg-slate-800/80 rounded-t-md">
+                    <div key={stableKey} className="relative group my-4 bg-stone-200/50 dark:bg-slate-900/70 rounded-lg border border-stone-300 dark:border-slate-800 shadow-sm overflow-hidden">
+                        <div className="flex justify-between items-center px-4 py-1.5 bg-stone-300/60 dark:bg-slate-800/70 border-b border-stone-300 dark:border-slate-800">
                             <span className="text-xs text-stone-600 dark:text-slate-400 font-mono">{lang}</span>
                              <button
                                 onClick={() => handleCopyCode(code, index)}
-                                className="flex items-center gap-1.5 text-xs text-stone-600 dark:text-slate-400 hover:text-[var(--accent-color)] transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                                className="flex items-center gap-1.5 text-xs text-stone-600 dark:text-slate-400 hover:text-[var(--accent-color)] transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 p-1 rounded-md"
                             >
                                 {copiedStates[index] ? (
                                     <><CheckIcon className="h-4 w-4 text-green-500" /><span>已複製!</span></>

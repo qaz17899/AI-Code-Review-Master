@@ -47,7 +47,7 @@ export const ModelSelectorInput: React.FC<ModelSelectorInputProps> = ({ id, labe
                         value={value}
                         onChange={(e) => onChange(e.target.value)}
                         list={`${id}-list`}
-                        className="w-full bg-stone-200 dark:bg-slate-900/80 border border-stone-400 dark:border-slate-700 rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-[var(--accent-color)] focus:border-[var(--accent-color)] outline-none"
+                        className="w-full bg-stone-200 dark:bg-slate-900/80 border border-stone-400 dark:border-slate-700 rounded-md px-3 py-2 text-sm focus:border-[var(--accent-color)] outline-none"
                         placeholder={provider === 'gemini' ? "e.g., gemini-2.5-pro" : "e.g., gpt-4o"}
                     />
                     {models.length > 0 && (

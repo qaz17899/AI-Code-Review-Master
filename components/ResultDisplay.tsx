@@ -27,15 +27,15 @@ const MessageToolbar: React.FC<{
     onExplain?: () => void;
     onDelete: () => void;
 }> = ({ isCopied, onCopy, onExplain, onDelete }) => (
-    <div className="flex flex-col gap-1 p-1.5 rounded-full bg-stone-200/50 dark:bg-slate-800/50 backdrop-blur-md border border-stone-300/80 dark:border-slate-700/80 shadow-lg">
+    <div className="flex flex-col gap-1 p-1.5 rounded-full bg-stone-100/60 dark:bg-slate-800/60 backdrop-blur-md border border-stone-300/80 dark:border-slate-700/80 shadow-lg">
         {onCopy && (
              <div className="relative group/item flex justify-center">
                 <button onClick={onCopy} aria-label="複製內容" className="p-2 rounded-full text-stone-500 dark:text-slate-400 hover:bg-stone-300/60 dark:hover:bg-slate-700/60 transition-colors transform hover:scale-110">
                     {isCopied ? <CheckIcon className="h-5 w-5 text-green-500" /> : <CopyIcon className="h-5 w-5" />}
                 </button>
-                <div className="absolute right-full top-1/2 -translate-y-1/2 mr-3 px-2 py-1 bg-slate-800 text-white text-xs font-semibold rounded-md shadow-lg opacity-0 group-hover/item:opacity-100 transition-opacity delay-300 pointer-events-none whitespace-nowrap">
+                <div className="absolute right-full top-1/2 -translate-y-1/2 mr-3 px-2 py-1 bg-slate-900 text-white text-xs font-semibold rounded-md shadow-lg opacity-0 group-hover/item:opacity-100 transition-opacity delay-300 pointer-events-none whitespace-nowrap">
                     {isCopied ? '已複製!' : '複製內容'}
-                    <div className="absolute left-full top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
+                    <div className="absolute left-full top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900 rotate-45"></div>
                 </div>
             </div>
         )}
@@ -44,9 +44,9 @@ const MessageToolbar: React.FC<{
                 <button onClick={onExplain} aria-label="AI 導師解說" className="p-2 rounded-full text-stone-500 dark:text-slate-400 hover:bg-stone-300/60 dark:hover:bg-slate-700/60 transition-colors transform hover:scale-110">
                     <SparklesIcon className="h-5 w-5" />
                 </button>
-                <div className="absolute right-full top-1/2 -translate-y-1/2 mr-3 px-2 py-1 bg-slate-800 text-white text-xs font-semibold rounded-md shadow-lg opacity-0 group-hover/item:opacity-100 transition-opacity delay-300 pointer-events-none whitespace-nowrap">
+                <div className="absolute right-full top-1/2 -translate-y-1/2 mr-3 px-2 py-1 bg-slate-900 text-white text-xs font-semibold rounded-md shadow-lg opacity-0 group-hover/item:opacity-100 transition-opacity delay-300 pointer-events-none whitespace-nowrap">
                     AI 導師解說
-                    <div className="absolute left-full top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
+                    <div className="absolute left-full top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900 rotate-45"></div>
                 </div>
             </div>
         )}
@@ -54,9 +54,9 @@ const MessageToolbar: React.FC<{
             <button onClick={onDelete} aria-label="刪除此處及之後的對話" className="p-2 rounded-full text-stone-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 transition-colors transform hover:scale-110">
                 <TrashIcon className="h-5 w-5" />
             </button>
-            <div className="absolute right-full top-1/2 -translate-y-1/2 mr-3 px-2 py-1 bg-slate-800 text-white text-xs font-semibold rounded-md shadow-lg opacity-0 group-hover/item:opacity-100 transition-opacity delay-300 pointer-events-none whitespace-nowrap">
+            <div className="absolute right-full top-1/2 -translate-y-1/2 mr-3 px-2 py-1 bg-slate-900 text-white text-xs font-semibold rounded-md shadow-lg opacity-0 group-hover/item:opacity-100 transition-opacity delay-300 pointer-events-none whitespace-nowrap">
                 刪除對話
-                <div className="absolute left-full top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
+                <div className="absolute left-full top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900 rotate-45"></div>
             </div>
         </div>
     </div>
@@ -66,6 +66,7 @@ const MessageToolbar: React.FC<{
 export const ResultDisplay: React.FC<ResultDisplayProps> = ({ history, onFollowUp, isSubmitting, onDeleteFromTurn, onRegenerate, onStopGeneration, settings, acceptedTypes }) => {
     const { activeConversation } = useConversation();
     const [viewingImage, setViewingImage] = useState<string | null>(null);
+    const prevConversationIdRef = useRef(activeConversation?.id);
     const [isDraggingOver, setIsDraggingOver] = useState(false);
     const [explanationState, setExplanationState] = useState<Record<number, {
         isLoading: boolean;
@@ -101,6 +102,14 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ history, onFollowU
 
     const mode = activeConversation?.mode || 'REVIEW';
     const IconComponent = MODES[mode]?.icon || MODES['REVIEW'].icon;
+
+    // EFFECT: Reset explanation state when switching conversations
+    useEffect(() => {
+        if (prevConversationIdRef.current !== activeConversation?.id) {
+            setExplanationState({});
+            prevConversationIdRef.current = activeConversation?.id;
+        }
+    }, [activeConversation?.id]);
 
     const handleShowToolbar = (index: number) => {
         if (hideToolbarTimeoutRef.current) {
@@ -301,7 +310,7 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ history, onFollowU
             </div>
 
             <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-grow overflow-y-auto custom-scrollbar relative">
-                <div ref={messagesContainerRef} className="max-w-4xl mx-auto p-4 md:p-6 space-y-8">
+                <div ref={messagesContainerRef} className="max-w-6xl mx-auto p-4 md:p-6 space-y-8">
                     {history.map((msg, index) => {
                         const isLastMessage = index === history.length - 1;
 

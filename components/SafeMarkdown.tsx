@@ -18,7 +18,7 @@ const MemoizedSafeMarkdown: React.FC<{ text: string; isStreaming: boolean; }> = 
                 const content = currentParagraphLines.join('\n').trim();
                 if (content) {
                     elements.push(
-                        <p key={`p-${elements.length}-${keyPrefix}`} className="my-2 text-stone-700 dark:text-slate-300 leading-loose">
+                        <p key={`p-${elements.length}-${keyPrefix}`} className="my-2 text-stone-700 dark:text-slate-300 leading-relaxed">
                             {processInlineFormatting(content)}
                         </p>
                     );

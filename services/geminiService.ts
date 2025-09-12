@@ -184,23 +184,23 @@ export const explainResponse = async (
     settings: ApiSettings
 ): Promise<{ explanation: string; suggestedQuestions: string[] }> => {
     const ai = getClient(settings);
-    const modelName = 'gemini-2.5-pro';
-    const prompt = `You are an AI programming tutor. A senior developer provided the following code review. Your task is to explain it clearly for a junior developer, focusing on the "why" behind the suggestions.
+    const modelName = 'gemini-2.5-flash';
+    const prompt = `你是一位 AI 程式設計導師。一位資深開發者提供了以下的程式碼審查。你的任務是為一位初階開發者清晰地解釋它，專注於建議背後的「為什麼」。
 
-After the explanation, you MUST provide 3-4 follow-up questions a junior developer might ask. These questions should encourage deeper learning about related concepts.
+在解釋之後，你**必須**提供 3-4 個初階開發者可能會提出的追問問題。這些問題應該能鼓勵對相關概念進行更深入的學習。
 
-The code review to explain:
+需要解釋的程式碼審查內容：
 ---
 ${content}
 ---
 
-Your response MUST be a valid JSON object. Do not include any other text or markdown formatting. The JSON object must have the following structure:
+你的回應**必須**是一個有效的 JSON 物件。請勿包含任何其他文字或 markdown 格式。JSON 物件必須具有以下結構：
 {
-  "explanation": "Your detailed explanation here, in Markdown format.",
+  "explanation": "你的詳細解釋，使用 Markdown 格式。",
   "suggestedQuestions": [
-    "A relevant follow-up question.",
-    "Another interesting question.",
-    "A third, insightful question."
+    "一個相關的追問問題。",
+    "另一個有趣的問題。",
+    "第三個有見解的問題。"
   ]
 }`;
 
@@ -208,9 +208,23 @@ Your response MUST be a valid JSON object. Do not include any other text or mark
         const response = await ai.models.generateContent({
             model: modelName,
             contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        explanation: { type: Type.STRING },
+                        suggestedQuestions: {
+                            type: Type.ARRAY,
+                            items: { type: Type.STRING }
+                        }
+                    },
+                    required: ['explanation', 'suggestedQuestions'],
+                }
+            }
         });
 
-        const result = JSON.parse(response.text);
+        const result = JSON.parse(response.text);        
         if (result && typeof result.explanation === 'string' && Array.isArray(result.suggestedQuestions)) {
             return result;
         }

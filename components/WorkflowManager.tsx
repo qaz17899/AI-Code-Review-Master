@@ -1,7 +1,9 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import type { AppFile, ReviewMode } from '../types';
 import { useApiSettings } from '../contexts/ApiSettingsContext';
-import { generateChatStream } from '../services/aiService';
+// FIX: Removed import from non-existent 'aiService.ts' and replaced with specific service imports.
+import { generateGeminiChatStream } from '../services/geminiService';
+import { generateOpenAIChatStream } from '../services/openaiService';
 import { WORKFLOW_STEP_PROMPT } from './constants';
 import { parseDiffs, applyPatch } from '../utils/patch';
 import { zipAndDownloadFiles } from '../utils';
@@ -67,16 +69,20 @@ export const WorkflowManager: React.FC<WorkflowManagerProps> = ({ initialFiles, 
                         .replace('{MODE_PROMPT}', MODES[mode].prompt);
                     
                     let responseText = '';
-                    const stream = await generateChatStream({
-                        provider: settings.defaultProvider,
-                        history: [],
-                        files: currentFiles,
-                        userMessage: 'Please process the files according to the workflow step.',
-                        images: [],
+                    // FIX: Replaced call to a generic, non-existent `generateChatStream` with a dynamic call
+                    // to the appropriate provider-specific stream generation function.
+                    const userMessage = 'Please process the files according to the workflow step.';
+                    const streamGenerator = settings.defaultProvider === 'gemini' ? generateGeminiChatStream : generateOpenAIChatStream;
+
+                    const stream = streamGenerator(
+                        [], // history
+                        currentFiles,
+                        userMessage,
+                        [], // images
                         masterPrompt,
+                        abortControllerRef.current.signal,
                         settings,
-                        signal: abortControllerRef.current.signal,
-                    });
+                    );
 
                     for await (const chunk of stream) {
                         if (isAbortingRef.current) break;

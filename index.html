@@ -62,6 +62,24 @@
         pointer-events: none;
         z-index: -1;
       }
+      
+      /* NEW: Subtle Aurora Background for Light Mode */
+      @keyframes aurora-light {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+      }
+      html:not(.dark) body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background: linear-gradient(125deg, rgba(224, 231, 255, 0.7) 0%, rgba(255, 228, 230, 0.7) 100%);
+        background-size: 400% 400%;
+        animation: aurora-light 30s ease infinite;
+        z-index: -2;
+        pointer-events: none;
+        opacity: 0.8;
+      }
 
       /* Interactive Aurora Background for Dark Mode */
       html.dark body::after {
@@ -82,7 +100,7 @@
         filter: blur(80px);
         z-index: -2;
         pointer-events: none;
-        transition: background 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: background 2s cubic-bezier(0.4, 0, 0.2, 1);
       }
       
       /* Noise texture for dark mode */

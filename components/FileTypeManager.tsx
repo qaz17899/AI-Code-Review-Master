@@ -43,7 +43,7 @@ export const FileTypeManager: React.FC<FileTypeManagerProps> = ({ types, onChang
       <label htmlFor="file-type-input" className="block text-sm font-medium text-stone-700 dark:text-slate-300 mb-2">
         可接受的檔案類型:
       </label>
-      <div className="flex flex-wrap items-center gap-2 p-2 bg-stone-200 dark:bg-slate-800 border-2 border-stone-300 dark:border-slate-700 rounded-lg focus-within:ring-2 focus-within:ring-[var(--accent-color)] transition">
+      <div className="flex flex-wrap items-center gap-2 p-2 bg-stone-200 dark:bg-slate-800 border-2 border-stone-300 dark:border-slate-700 rounded-lg transition">
         {types.map(type => (
           <div key={type} className="flex items-center gap-1 bg-stone-300 dark:bg-slate-700 text-stone-800 dark:text-slate-200 text-sm font-mono pl-2.5 pr-1.5 py-1 rounded-full animate-fade-in">
             <span>{type}</span>

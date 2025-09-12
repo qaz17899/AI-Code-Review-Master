@@ -91,7 +91,7 @@ const App: React.FC = () => {
             <div className="flex items-center gap-3">
                 <button 
                   onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                  className="p-2 rounded-full text-stone-600 dark:text-slate-400 hover:bg-stone-300 dark:hover:bg-slate-800 transition-colors"
+                  className="p-2 rounded-full text-stone-600 dark:text-slate-400 hover:bg-stone-300/70 dark:hover:bg-slate-800/70 hover:text-[var(--accent-color)] transition-all duration-150 ease-out transform-gpu hover:scale-110 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-color)]"
                   aria-label="Toggle sidebar"
                 >
                   <div className="relative h-6 w-6">
