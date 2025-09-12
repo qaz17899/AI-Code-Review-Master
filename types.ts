@@ -1,6 +1,6 @@
 import type { Chat } from '@google/genai';
 
-export type ReviewMode = 'REVIEW' | 'BUGFIX' | 'REFACTOR' | 'Q&A' | 'OPTIMIZE' | 'DESIGNER' | 'TESTER' | 'DESIGN' | 'IMPLEMENT' | 'ENHANCE' | 'SIMPLIFY' | 'BALANCE' | 'VERIFY' | 'SCALE' | 'SECURITY' | 'DOCS' | 'CONSOLIDATE' | 'WORKFLOW' | 'POLISH';
+export type ReviewMode = 'REVIEW' | 'BUGFIX' | 'REFACTOR' | 'Q&A' | 'OPTIMIZE' | 'DESIGNER' | 'TESTER' | 'DESIGN' | 'IMPLEMENT' | 'ENHANCE' | 'SIMPLIFY' | 'BALANCE' | 'VERIFY' | 'SCALE' | 'SECURITY' | 'DOCS' | 'CONSOLIDATE' | 'WORKFLOW' | 'POLISH' | 'INSIGHT' | 'BLUEPRINT';
 export type ApiProvider = 'gemini' | 'openai';
 
 export interface AppFile {

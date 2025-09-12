@@ -352,3 +352,15 @@ export const WandIcon: React.FC<IconProps> = (props) => (
         <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.998 15.998 0 013.388-1.622m0 0a15.998 15.998 0 013.388-1.622m0 0a15.998 15.998 0 013.388-1.622m-13.5 6.484A15.998 15.998 0 0112 3.372m0 0c-3.388 0-6.44-1.24-8.77-3.372m17.54 0a15.998 15.998 0 00-8.77-3.372M12 3.372c-3.388 0-6.44 1.24-8.77 3.372" />
     </svg>
 );
+
+export const LightbulbIcon: React.FC<IconProps> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 14.25h3m-6.75 3h10.5M12 3c-4.97 0-9 4.03-9 9 0 2.895 1.371 5.488 3.527 7.116L6 21h12l-1.527-1.634C19.629 17.488 21 14.895 21 12c0-4.97-4.03-9-9-9z" />
+  </svg>
+);
+
+export const BlueprintIcon: React.FC<IconProps> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+  </svg>
+);

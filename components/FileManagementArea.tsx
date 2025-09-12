@@ -15,6 +15,7 @@ interface FileManagementAreaProps {
     acceptedTypes: string[];
     setAcceptedTypes: React.Dispatch<React.SetStateAction<string[]>>;
     selectedFilePaths: Set<string>;
+    setUserSelection: React.Dispatch<React.SetStateAction<Set<string>>>;
     setSelectedFilePaths: React.Dispatch<React.SetStateAction<Set<string>>>;
     userMessage: string;
     setError: React.Dispatch<React.SetStateAction<string>>;
@@ -28,7 +29,7 @@ interface FileManagementAreaProps {
 
 export const FileManagementArea: React.FC<FileManagementAreaProps> = (props) => {
     const {
-        files, setFiles, acceptedTypes, setAcceptedTypes, selectedFilePaths, setSelectedFilePaths,
+        files, setFiles, acceptedTypes, setAcceptedTypes, selectedFilePaths, setUserSelection, setSelectedFilePaths,
         recommendedPaths, isScoping, onAiScoping,
     } = props;
     const showTypeManager = props.showTypeManager !== false; // Default to true
@@ -84,16 +85,20 @@ export const FileManagementArea: React.FC<FileManagementAreaProps> = (props) => 
                 const uniqueNewFiles = newFiles.filter(nf => !existingFilePaths.has(nf.path));
                 return [...prevFiles, ...uniqueNewFiles].sort((a,b) => a.path.localeCompare(b.path));
             });
+            
+            const newFilePaths = newFiles.map(file => file.path);
+            // Update both user's intent and the visible selection
+            setUserSelection(prevSelection => new Set([...prevSelection, ...newFilePaths]));
             setSelectedFilePaths(prevSelected => {
                 const newSelected = new Set(prevSelected);
-                newFiles.forEach(file => newSelected.add(file.path));
+                newFilePaths.forEach(path => newSelected.add(path));
                 return newSelected;
             });
         } catch (err) {
             console.error("Error reading files:", err);
             props.setError("讀取檔案時發生錯誤。");
         }
-    }, [setFiles, setSelectedFilePaths, props.setError, acceptedTypes]);
+    }, [setFiles, setUserSelection, setSelectedFilePaths, props.setError, acceptedTypes]);
 
     const handleRemoveFile = (pathToRemove: string, isFolder: boolean) => {
         const pathsToRemove = new Set<string>([pathToRemove]);
@@ -103,6 +108,12 @@ export const FileManagementArea: React.FC<FileManagementAreaProps> = (props) => 
         }
 
         setFiles(prev => prev.filter(f => !pathsToRemove.has(f.path)));
+        // Also remove from user's intent
+        setUserSelection(prev => {
+            const newSet = new Set(prev);
+            pathsToRemove.forEach(p => newSet.delete(p));
+            return newSet;
+        });
         setSelectedFilePaths(prev => {
           const newSet = new Set(prev);
           pathsToRemove.forEach(p => newSet.delete(p));
@@ -111,7 +122,8 @@ export const FileManagementArea: React.FC<FileManagementAreaProps> = (props) => 
     };
 
     const handleToggleFileSelection = (path: string, isFolder: boolean) => {
-        setSelectedFilePaths(prev => {
+        // This action directly reflects user intent, so we update `userSelection`
+        setUserSelection(prev => {
             const newSet = new Set(prev);
             const filesToToggle = isFolder ? (folderFileMap.get(path) || []) : [path];
             
@@ -138,13 +150,15 @@ export const FileManagementArea: React.FC<FileManagementAreaProps> = (props) => 
     const handleToggleSelectAll = () => {
         const visibleFilePaths = visibleFiles.map(f => f.path);
         if (allVisibleSelected) {
-            setSelectedFilePaths(prev => {
+            // Deselect all visible files
+            setUserSelection(prev => {
                 const newSet = new Set(prev);
                 visibleFilePaths.forEach(path => newSet.delete(path));
                 return newSet;
             });
         } else {
-            setSelectedFilePaths(prev => {
+            // Select all visible files
+            setUserSelection(prev => {
                 const newSet = new Set(prev);
                 visibleFilePaths.forEach(path => newSet.add(path));
                 return newSet;

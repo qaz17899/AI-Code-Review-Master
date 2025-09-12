@@ -1,35 +1,19 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
-export const AnimatedMessage: React.FC<{ messages: string[]; files?: string[]; className?: string }> = ({ messages, files = [], className = '' }) => {
+export const AnimatedMessage: React.FC<{ messages: string[]; className?: string }> = ({ messages, className = '' }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [displayedText, setDisplayedText] = useState(messages[0] || '');
   const [isAnimatingOut, setIsAnimatingOut] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const combinedMessages = useMemo(() => {
-    if (files.length === 0) return messages;
-    
-    const fileMessages = files.slice(0, 15).map(f => `掃描 ${f}...`);
-    // OPTIMIZATION: Use a direct loop to avoid intermediate arrays from .from, .flatMap, and .filter,
-    // which is more memory-efficient and faster.
-    const interleaved: string[] = [];
-    const maxLength = Math.max(messages.length, fileMessages.length);
-    for (let i = 0; i < maxLength; i++) {
-        if (messages[i]) interleaved.push(messages[i]);
-        if (fileMessages[i]) interleaved.push(fileMessages[i]);
-    }
-      
-    return interleaved.length > 0 ? interleaved : messages;
-  }, [messages, files]);
-
   useEffect(() => {
     // Reset when messages change
-    setDisplayedText(combinedMessages[0] || '');
+    setDisplayedText(messages[0] || '');
     setCurrentIndex(0);
-  }, [combinedMessages]);
+  }, [messages]);
 
   useEffect(() => {
-    if (combinedMessages.length <= 1) return;
+    if (messages.length <= 1) return;
 
     // Clear previous timeout if messages change
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -38,15 +22,15 @@ export const AnimatedMessage: React.FC<{ messages: string[]; files?: string[]; c
         setIsAnimatingOut(true); // Start fade-out animation
 
         setTimeout(() => {
-            const nextIndex = (currentIndex + 1) % combinedMessages.length;
+            const nextIndex = (currentIndex + 1) % messages.length;
             setCurrentIndex(nextIndex);
-            setDisplayedText(combinedMessages[nextIndex]);
+            setDisplayedText(messages[nextIndex]);
             setIsAnimatingOut(false); // Reset for fade-in
         }, 500); // This should match the animation duration
     }, 3500);
 
     return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current) };
-  }, [currentIndex, combinedMessages]);
+  }, [currentIndex, messages]);
 
   return (
     <div className="relative h-6 w-full flex items-center justify-start">

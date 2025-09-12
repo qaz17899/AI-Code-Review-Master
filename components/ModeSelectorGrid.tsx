@@ -20,7 +20,7 @@ const MODE_CATEGORIES: { title: string; modes: ReviewMode[] }[] = [
     },
     {
         title: '系統設計',
-        modes: ['DESIGN', 'IMPLEMENT', 'SCALE', 'VERIFY']
+        modes: ['DESIGN', 'IMPLEMENT', 'SCALE', 'VERIFY', 'BLUEPRINT', 'INSIGHT']
     },
     {
         title: '創意與問答',

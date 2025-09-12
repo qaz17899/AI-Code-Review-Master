@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import type { AppFile, ReviewMode } from '../types';
 import { MasterIcon } from './icons';
 import { DEFAULT_LOADING_MESSAGES } from './constants';
@@ -6,7 +6,20 @@ import { AnimatedMessage } from './AnimatedMessage';
 import { MODES } from '../config/modes';
 
 export const LoadingDisplay: React.FC<{ files: AppFile[], mode: ReviewMode }> = ({ files, mode }) => {
-  const messages = MODES[mode]?.ui.loadingMessages || DEFAULT_LOADING_MESSAGES;
+  const baseMessages = MODES[mode]?.ui.loadingMessages || DEFAULT_LOADING_MESSAGES;
+
+  const messages = useMemo(() => {
+    if (files.length === 0) return baseMessages;
+
+    const fileMessages = files.slice(0, 15).map(f => `掃描 ${f.path}...`);
+    const interleaved: string[] = [];
+    const maxLength = Math.max(baseMessages.length, fileMessages.length);
+    for (let i = 0; i < maxLength; i++) {
+        if (baseMessages[i]) interleaved.push(baseMessages[i]);
+        if (fileMessages[i]) interleaved.push(fileMessages[i]);
+    }
+    return interleaved.length > 0 ? interleaved : baseMessages;
+  }, [baseMessages, files]);
 
   return (
     <main className="w-full h-full flex flex-col items-center justify-center text-center p-4 animate-fade-in bg-transparent">
@@ -22,7 +35,7 @@ export const LoadingDisplay: React.FC<{ files: AppFile[], mode: ReviewMode }> = 
         <p className="text-stone-600 dark:text-slate-400 mt-2 max-w-md">正在為您選擇的 {files.length} 個檔案進行 <span className="font-bold text-[var(--accent-color)]">{mode}</span> 模式分析。請稍候。</p>
 
         <div className="mt-10 w-full max-w-2xl bg-stone-100/50 dark:bg-slate-900/50 backdrop-blur-lg border border-stone-400 dark:border-slate-800/50 rounded-xl p-6 dark:ring-1 dark:ring-inset dark:ring-white/10 shadow-md">
-            <AnimatedMessage messages={messages} files={files.map(f => f.path)} className="text-lg text-stone-700 dark:text-slate-400 h-6" />
+            <AnimatedMessage messages={messages} className="text-lg text-stone-700 dark:text-slate-400 h-6" />
         </div>
       
         {files.length > 0 && (

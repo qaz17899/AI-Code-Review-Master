@@ -4,7 +4,7 @@ import {
     StarIcon, TesterIcon, DesignIcon, EnhancementIcon, ScalabilityIcon,
     SecurityIcon, DocumentationIcon, BroomIcon, BugAntIcon, QuestionMarkCircleIcon,
     BoltIcon, PaintBrushIcon, CodeBracketIcon, ScaleIcon, CheckBadgeIcon, ScissorsIcon,
-    WorkflowIcon, WandIcon, RefreshIcon,
+    WorkflowIcon, WandIcon, RefreshIcon, LightbulbIcon, BlueprintIcon,
 } from '../components/icons';
 // FIX: Import IconProps to correctly type icon components.
 import type { IconProps } from '../components/icons';
@@ -90,7 +90,7 @@ export const MODES: Record<ReviewMode, ModeConfig> = {
         name: '產生文件',
         description: '為程式碼自動產生註解和技術文件。',
         theme: { gradient: { c1: 'rgba(107, 114, 128, 0.15)',c2: 'rgba(156, 163, 175, 0.15)'}, accent: { color: '#6b7280', hover: '#9ca3af', from: '#9ca3af', to: '#d1d5db' } },
-        prompt: `你是一位資深技術文件撰寫工程師 (Technical Writer)，專長是為程式碼自動產生清晰、專業的技術文件。你的任務是為使用者提供的程式碼片段或檔案產生標準化的文件。\n\n你的產出應包含：\n1. **函式/類別註解：** 為主要的函式或類別產生標準格式的註解（如 JSDoc, Python Docstrings），說明其功能、參數和回傳值。\n2. **README 文件草稿：** 根據程式碼的結構和用途，生成一份 README.md 的草稿，包含功能介紹和使用範例。\n3. **演算法解釋：** 如果程式碼中包含複雜的演算法，請用淺顯易懂的語言解釋其運作原理。\n\n請以 Markdown 格式輸出所有文件內容。`,
+        prompt: `你現在是一位經驗豐富的資深軟體架構師。你的任務是分析我將提供的整個 Python 專案原始碼，並生成一份全面而精要的技術架構文檔。\n\n**最終目標：**\n這份文檔的唯一讀者是 AI 語言模型（例如你自己）。它的目的是作為一份「主上下文參考文件」(Master Context Reference)，讓 AI 在未來進行程式碼分析、重構建議或 Bug 修復時，能夠快速理解整個專案的架構、模組職責、數據流和設計原則。`,
         example: { title: '範例：產生文件 (Docs)', prompt: `function calculateArea(radius) {\n  return Math.PI * radius * radius;\n}`, response: `### JSDoc 註解\n\n\`\`\`javascript\n/**\n * 計算圓形的面積。\n * @param {number} radius - 圓形的半徑。\n * @returns {number} 圓形的面積。\n */\nfunction calculateArea(radius) {\n  return Math.PI * radius * radius;\n}\n\`\`\`` },
         ui: {
             mainTitle: 'AI 文件產生大師',
@@ -329,4 +329,42 @@ export const MODES: Record<ReviewMode, ModeConfig> = {
             loadingMessages: ['初始化工作流...', '載入專案檔案...', '驗證模式序列...', '準備執行環境...']
         }
     },
+    INSIGHT: {
+        icon: LightbulbIcon,
+        name: '架構洞察',
+        description: '分析資料結構 (YAML) 與其解析程式碼 (.py) 之間的互動，找出深層的設計問題。',
+        theme: { gradient: { c1: 'rgba(5, 150, 105, 0.15)',  c2: 'rgba(101, 163, 13, 0.15)' }, accent: { color: '#22c55e', hover: '#4ade80', from: '#84cc16', to: '#4ade80' } },
+        prompt: `你是一位頂尖的軟體架構師，專精於數據驅動的遊戲系統設計。你的任務是同時分析資料結構定義 (YAML 檔案) 和解析這些結構的程式碼 (.py 檔案)，找出它們之間深層的架構問題、不一致性及簡化機會。\n\n你的審查重點：\n1.  **結構與解析的耦合度 (Schema & Parser Cohesion):** 分析 YAML 結構與 Python 解析邏輯 (如 \`skill_resolver.py\`) 的關係。是否存在因 YAML 結構設計不佳而導致 Python 程式碼變得過於複雜、充滿特例判斷？提出能同時簡化 YAML 和 Python 的結構調整建議。\n2.  **模型不一致 (Inconsistent Models):** 比較不同的資料模型 (例如技能 \`SkillBlueprint\` vs 怪物技能 \`MonsterSkillConfig\`)。它們是否用不同的方式來表達相似的概念（如觸發條件、效果）？是否有機會統一這些模型，讓解析邏輯更通用？\n3.  **遞迴與複雜性 (Recursive Complexity):** 檢查遞迴解析的邏輯。YAML 的結構設計是否可能導致過深的遞迴、效能瓶頸或潛在的無限迴圈？是否有更簡單、更安全的非遞迴或扁平化結構可以替代？\n4.  **可擴展性 (Extensibility):** 評估當前的架構是否容易擴展。當需要新增一種新的效果 (Effect) 或條件 (Condition) 時，是否需要修改多個地方的程式碼？是否有更具擴展性的設計模式（如註冊表模式、策略模式）可以應用？\n5.  **冗餘與重複 (Redundancy):** 找出在 YAML 或 Python 中重複的邏輯。例如，是否有兩個技能的 YAML 結構幾乎一樣，只是數值不同？它們能否被抽象成一個共用的模板？`,
+        example: {
+            title: '範例：架構洞察 (Insight)',
+            prompt: `// 檔案 1: goblin_slash.yaml\nskill_type: "PhysicalDamage"\nbase_damage: 50\nattack_scaling: 1.2\n\n// 檔案 2: mini_fireball.yaml\nskill_type: "MagicDamage"\nbase_damage: 40\nmagic_power_scaling: 1.5\n\n// 檔案 3: skill_parser.py\ndef parse_skill(config):\n  if config['skill_type'] == "PhysicalDamage":\n    # ... 處理物理傷害的邏輯 ...\n    total_damage = config['base_damage'] + get_attack() * config['attack_scaling']\n  elif config['skill_type'] == "MagicDamage":\n    # ... 處理魔法傷害的邏輯 ...\n    total_damage = config['base_damage'] + get_magic_power() * config['magic_power_scaling']\n  return total_damage`,
+            // FIX: Escaped inner backticks within the template literal to prevent parsing errors.
+            response: `### 架構洞察報告\n\n分析了技能的 YAML 結構與 Python 解析器後，我發現了一個核心的架構問題：\n\n#### 1. 結構與解析邏輯緊密耦合\n- **問題點:** Python 解析器 \\\`skill_parser.py\\\` 中使用了 \\\`if/elif\\\` 來處理不同類型的技能。這導致每次新增一種傷害類型（例如「真實傷害」），都必須修改這段 Python 程式碼，違反了開閉原則。\n- **根本原因:** YAML 的結構不夠通用。\\\`attack_scaling\\\` 和 \\\`magic_power_scaling\\\` 是兩個獨立的欄位，迫使程式碼必須知道每個欄位的具體名稱。\n\n#### 2. 改進建議：統一 YAML 結構\n我們可以設計一個更通用的 YAML 結構，將「加成來源」和「倍率」抽象出來。\n\n**修改後的 YAML 結構:**\n\`\`\`yaml\n# unified_skill_template.yaml\nbase_damage: 50\nscalings:\n  - stat: "attack"  # 引用玩家的屬性\n    multiplier: 1.2\n  - stat: "magic_power"\n    multiplier: 1.5\n\`\`\`\n\n**簡化後的 Python 解析器:**\n\`\`\`python\ndef parse_skill(config):\n  total_damage = config.get('base_damage', 0)\n  for scaling_rule in config.get('scalings', []):\n    stat_name = scaling_rule['stat']\n    multiplier = scaling_rule['multiplier']\n    player_stat_value = get_player_stat(stat_name) # 一個通用的取屬性函式\n    total_damage += player_stat_value * multiplier\n  return total_damage\n\`\`\`\n\n#### 帶來的好處\n1.  **易於擴展:** 未來新增一個「基於防禦力的傷害」，只需要在 YAML 中新增一個 \\\`scalings\\\` 項目，**完全不需要修改 Python 程式碼**。\n2.  **簡化程式碼:** 消除了 \\\`if/elif\\\` 鏈，讓解析邏輯變得極度簡潔和通用。`
+        },
+        ui: {
+            mainTitle: 'AI 架構洞察師',
+            subTitle: '您的數據驅動系統架構顧問',
+            placeholder: '上傳你的 YAML 設定檔和相關的 Python 程式碼，我將為你分析它們之間的深層關係...',
+            buttonText: '開始洞察'
+        }
+    },
+    BLUEPRINT: {
+        icon: BlueprintIcon,
+        name: '實作藍圖',
+        description: '在動手前先規劃！根據新功能需求，產出詳細的技術實作藍圖與影響範圍分析。',
+        theme: { gradient: { c1: 'rgba(71, 85, 105, 0.15)',  c2: 'rgba(100, 116, 139, 0.15)' },accent: { color: '#64748b', hover: '#94a3b8', from: '#94a3b8', to: '#cbd5e1' } },
+        prompt: `你是一位謹慎且經驗豐富的首席軟體架構師，專長是將產品需求轉化為清晰、可執行的技術藍圖，確保新功能能與現有系統和諧共存。\n\n你的任務是根據使用者提出的**新功能需求**和提供的**相關現有程式碼**，輸出一份詳細的**實作藍圖 (Implementation Blueprint)**。你的目標是**規劃**而非**實作**。\n\n你的藍圖必須包含以下部分：\n1.  **影響範圍分析 (Impact Analysis):** 明確列出需要修改的現有檔案，以及需要創建的新檔案。\n2.  **資料模型變更 (Data Model Changes):** 如果需要，提供對資料庫模型或 YAML 結構的修改建議，最好使用 diff 格式。\n3.  **核心邏輯設計 (Core Logic Design):** 描述新功能的核心業務邏輯應該在哪個服務 (Service) 中實現，定義出關鍵的函式/方法簽名及其職責。\n4.  **介面/API 設計 (Interface/API Design):** 如果涉及 UI 或 API 變更，描述需要新增或修改哪些元件或端點。\n5.  **設計模式與原則建議:** 提出實現此功能時應遵循的設計原則或推薦的設計模式，以確保程式碼的可維護性和擴展性。`,
+        example: {
+            title: '範例：實作藍圖 (Blueprint)',
+            prompt: `我需要為遊戲新增一個「裝備附魔」系統。玩家可以消耗「魔能碎片」為裝備隨機增加一條新屬性。相關的檔案有 player_service.py 和 player_models.py。`,
+            // FIX: Escaped inner backticks within the template literal to prevent parsing errors.
+            response: `### 裝備附魔系統 - 實作藍圖\n\n好的，這是一個很好的功能。為了確保它能良好地整合進現有系統，我建議遵循以下藍圖：\n\n#### 1. 影響範圍分析\n- **需修改檔案:**\n  - \\\`venture/models/player_models.py\\\`: 在 \\\`Equipment\\\` 模型中增加 \\\`affixes\\\` 欄位。\n  - \\\`venture/services/player_service.py\\\`: 新增 \\\`enchant_equipment\\\` 核心邏輯。\n  - \\\`venture/views/inventory_view.py\\\`: 在 UI 中新增「附魔」按鈕。\n- **需新增檔案 (推薦):**\n  - \\\`venture/services/enchanting_service.py\\\`: 將附魔規則獨立成一個新服務。\n\n#### 2. 資料模型變更 (\\\`player_models.py\\\`)\n建議將 \\\`affixes\\\` 設計為一個列表，以支持多條附魔屬性。\n\n\`\`\`diff\n--- a/venture/models/player_models.py\n+++ b/venture/models/player_models.py\n@@ -6,7 +6,7 @@\n     equipment_type: str\n     rarity: str\n     base_stats: Dict[str, Any]\n-    affixes: Optional[Dict[str, Any]] = None\n+    affixes: List[Dict[str, Any]] = Field(default_factory=list)\n     image_url: Optional[str] = None\n     is_equipped: bool = False\n     is_locked: bool = False\n\n\`\`\`\n\n#### 3. 核心邏輯設計\n- **\\\`enchanting_service.py\\\` (新服務):**\n  - 應包含一個方法 \\\`generate_random_affix(equipment: Equipment) -> Dict[str, Any]\\\`，負責根據裝備稀有度和等級，隨機生成一條詞綴的邏輯。\n- **\\\`player_service.py\\\`:**\n  - 應新增一個方法 \\\`async def enchant_equipment(user_id: int, equipment_id: int) -> Equipment:\\\`，它將處理檢查玩家資源、呼叫 \\\`EnchantingService\\\`、更新資料庫等主要流程。`
+        },
+        ui: {
+            mainTitle: 'AI 系統架構師',
+            subTitle: '您的前瞻性實作規劃專家',
+            placeholder: '請描述你想新增的功能，並附上相關的現有程式碼...',
+            buttonText: '規劃實作藍圖'
+        }
+    }
 };

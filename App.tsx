@@ -16,9 +16,13 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const { activeConversation } = useConversation();
   const [isThemeAnimating, setIsThemeAnimating] = useState(false);
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState<true | null>(null);
   const [displayMode, setDisplayMode] = useState(activeConversation?.mode || 'REVIEW');
   const [isModeAnimating, setIsModeAnimating] = useState(false);
+
+  // NEW: State to track submitting conversations, enabling parallel requests.
+  const [submittingIds, setSubmittingIds] = useState<Set<string>>(new Set());
+
 
   // --- Theme Management ---
   useEffect(() => {
@@ -82,7 +86,7 @@ const App: React.FC = () => {
 
   return (
     <div className="w-full h-screen flex flex-col">
-       <SettingsModal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} />
+       <SettingsModal isOpen={!!settingsModalOpen} onClose={() => setSettingsModalOpen(null)} />
        <header className="relative overflow-hidden flex-shrink-0 p-2 sm:p-4 border-b border-[var(--accent-color)]/20 flex justify-between items-center bg-stone-100/75 dark:bg-[#10141c]/75 backdrop-blur-2xl sticky top-0 z-20 dark:ring-1 dark:ring-inset dark:ring-white/10 transition-all duration-500 glass-noise">
             <div className="flex items-center gap-3">
                 <button 
@@ -137,7 +141,7 @@ const App: React.FC = () => {
 
             <div className="flex items-center gap-2">
                 <button
-                    onClick={() => setIsSettingsModalOpen(true)}
+                    onClick={() => setSettingsModalOpen(true)}
                     className="p-2 rounded-full text-stone-600 dark:text-slate-400 hover:bg-stone-300/70 dark:hover:bg-slate-800/70 hover:text-[var(--accent-color)] transition-all duration-150 ease-out transform-gpu hover:scale-110 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-color)]"
                     aria-label="API Settings"
                 >
@@ -158,9 +162,13 @@ const App: React.FC = () => {
        <div className="flex-grow min-h-0 flex">
           <ConversationSidebar
             isOpen={isSidebarOpen}
+            submittingIds={submittingIds}
           />
           <div className="flex-1 min-w-0">
-            <CodeReviewer />
+            <CodeReviewer 
+              submittingIds={submittingIds}
+              setSubmittingIds={setSubmittingIds}
+            />
           </div>
        </div>
     </div>

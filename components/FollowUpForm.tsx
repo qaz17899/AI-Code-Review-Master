@@ -6,7 +6,6 @@ import { processUploadedFiles, handleImagePaste, type UploadPayload } from '../u
 import { getFileIcon } from '../utils/fileTree';
 import { TokenDisplay } from './TokenDisplay';
 import { useDebouncedTokenCounter } from '../hooks/useDebouncedTokenCounter';
-import { ALL_SUPPORTED_TYPES } from './constants';
 
 export const FollowUpForm: React.FC<{
     onFollowUp: (files: AppFile[], message: string, images: string[]) => Promise<void>;

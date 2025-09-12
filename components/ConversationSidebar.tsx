@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, FormEvent, useCallback } from 'react';
 import type { Conversation } from '../types';
-import { PlusIcon, MessageSquareIcon, TrashIcon, EditIcon, SearchIcon, XIcon, ChevronDownIcon, FolderIcon } from './icons';
+import { PlusIcon, MessageSquareIcon, TrashIcon, EditIcon, SearchIcon, XIcon, ChevronDownIcon, FolderIcon, SpinnerIcon } from './icons';
 import { useConversation } from '../contexts/ConversationContext';
 import { MODES } from '../config/modes';
 import { useApiSettings } from '../contexts/ApiSettingsContext';
@@ -9,10 +9,12 @@ import Portal from './Portal';
 
 interface ConversationSidebarProps {
     isOpen: boolean;
+    submittingIds: Set<string>;
 }
 
 export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
     isOpen,
+    submittingIds,
 }) => {
     const { workspaces, conversations, activeWorkspaceId, activeConversationId, dispatch } = useConversation();
     const { settings } = useApiSettings();
@@ -256,6 +258,7 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                  conv={conv}
                                  isActive={activeConversationId === conv.id && editingId !== conv.id}
                                  isEditing={editingId === conv.id}
+                                 isSubmitting={submittingIds.has(conv.id)}
                                  editText={editText}
                                  setEditText={setEditText}
                                  onSelect={handleSelect}
@@ -307,6 +310,7 @@ interface ConversationItemProps {
     conv: Conversation;
     isActive: boolean;
     isEditing: boolean;
+    isSubmitting: boolean;
     editText: string;
     setEditText: (text: string) => void;
     onSelect: (id: string) => void;
@@ -321,7 +325,7 @@ interface ConversationItemProps {
 }
 
 const ConversationItem = React.memo<ConversationItemProps>(({
-    conv, isActive, isEditing, editText, setEditText, onSelect, onStartEditing,
+    conv, isActive, isEditing, isSubmitting, editText, setEditText, onSelect, onStartEditing,
     onRename, onDelete, onKeyDown, onSetTooltip, itemRef, inputRef, animationIndex
 }) => {
     const turnCount = Math.ceil(conv.history.length / 2);                            
@@ -345,7 +349,11 @@ const ConversationItem = React.memo<ConversationItemProps>(({
                     : 'text-stone-700 dark:text-slate-400 hover:bg-stone-100/70 dark:hover:bg-slate-800/70 hover:translate-x-1'
                 }`}
             >
-                <MessageSquareIcon className="h-5 w-5 flex-shrink-0 ml-1" />
+                {isSubmitting ? (
+                    <SpinnerIcon className="h-5 w-5 flex-shrink-0 ml-1 animate-spin text-[var(--accent-color)]" />
+                ) : (
+                    <MessageSquareIcon className="h-5 w-5 flex-shrink-0 ml-1" />
+                )}
                 {isEditing ? (
                     <input
                         ref={inputRef}
@@ -363,22 +371,24 @@ const ConversationItem = React.memo<ConversationItemProps>(({
                             <p className="text-sm font-medium truncate">{conv.title}</p>
                             <p className="text-xs text-stone-500 dark:text-slate-500 truncate">{subtitle}</p>
                         </div>
-                        <div className="flex-shrink-0 flex items-center opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                            <button
-                                onClick={(e) => onStartEditing(e, conv)}
-                                className={`p-1.5 rounded-md transition-all duration-150 hover:scale-110 active:scale-95 ${isActive ? 'text-white/70 hover:text-white hover:bg-white/20' : 'text-stone-600 dark:text-slate-400 hover:text-stone-800 dark:hover:text-slate-300 hover:bg-black/10 dark:hover:bg-white/10'}`}
-                                aria-label={`重新命名 ${conv.title}`}
-                            >
-                                <EditIcon className="h-4 w-4" />
-                            </button>
-                            <button 
-                                onClick={(e) => onDelete(e, conv.id)}
-                                className={`p-1.5 rounded-md transition-all duration-150 hover:scale-110 active:scale-95 ${isActive ? 'text-white/70 hover:text-red-300 hover:bg-white/20' : 'text-stone-600 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10'}`}
-                                aria-label={`刪除 ${conv.title}`}
-                            >
-                                <TrashIcon className="h-4 w-4" />
-                            </button>
-                        </div>
+                        {!isSubmitting && (
+                            <div className="flex-shrink-0 flex items-center opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                                <button
+                                    onClick={(e) => onStartEditing(e, conv)}
+                                    className={`p-1.5 rounded-md transition-all duration-150 hover:scale-110 active:scale-95 ${isActive ? 'text-white/70 hover:text-white hover:bg-white/20' : 'text-stone-600 dark:text-slate-400 hover:text-stone-800 dark:hover:text-slate-300 hover:bg-black/10 dark:hover:bg-white/10'}`}
+                                    aria-label={`重新命名 ${conv.title}`}
+                                >
+                                    <EditIcon className="h-4 w-4" />
+                                </button>
+                                <button 
+                                    onClick={(e) => onDelete(e, conv.id)}
+                                    className={`p-1.5 rounded-md transition-all duration-150 hover:scale-110 active:scale-95 ${isActive ? 'text-white/70 hover:text-red-300 hover:bg-white/20' : 'text-stone-600 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10'}`}
+                                    aria-label={`刪除 ${conv.title}`}
+                                >
+                                    <TrashIcon className="h-4 w-4" />
+                                </button>
+                            </div>
+                        )}
                     </>
                 )}
             </button>

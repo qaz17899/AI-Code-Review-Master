@@ -17,14 +17,17 @@ import { WorkflowManager } from './WorkflowManager';
 import { useDebouncedTokenCounter } from '../hooks/useDebouncedTokenCounter';
 import { getModeIcon } from './ModeIcons';
 
+interface CodeReviewerProps {
+  submittingIds: Set<string>;
+  setSubmittingIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+}
 
-export const CodeReviewer: React.FC = () => {
+export const CodeReviewer: React.FC<CodeReviewerProps> = ({ submittingIds, setSubmittingIds }) => {
   const { activeConversation, dispatch } = useConversation();
   const prevConversationIdRef = useRef(activeConversation?.id);
   
   const [files, setFiles] = useState<AppFile[]>([]);
   const [error, setError] = useState<string>('');
-  const [submittingConversationId, setSubmittingConversationId] = useState<string | null>(null);
   
   const [userMessage, setUserMessage] = useState('');
   const [pastedImages, setPastedImages] = useState<string[]>([]);
@@ -41,11 +44,13 @@ export const CodeReviewer: React.FC = () => {
   });
   
   const [selectedFilePaths, setSelectedFilePaths] = useState<Set<string>>(new Set());
+  // NEW: State to store user's explicit selections, unaffected by filters.
+  const [userSelection, setUserSelection] = useState<Set<string>>(new Set());
   const [recommendedPaths, setRecommendedPaths] = useState<Set<string>>(new Set());
   const [isScoping, setIsScoping] = useState(false);
 
   const { settings } = useApiSettings();
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const abortControllersRef = useRef<Map<string, AbortController>>(new Map());
 
   const [exampleModalMode, setExampleModalMode] = useState<ReviewMode | null>(null);
 
@@ -56,8 +61,8 @@ export const CodeReviewer: React.FC = () => {
   const filesToCount = useMemo(() => files.filter(f => selectedFilePaths.has(f.path)), [files, selectedFilePaths]);
   const [inputTokenCount, isCountingTokens] = useDebouncedTokenCounter(provider, filesToCount, userMessage, pastedImages, settings);
 
+  const isCurrentConversationSubmitting = conversation ? submittingIds.has(conversation.id) : false;
 
-  const isSubmitting = submittingConversationId !== null;
   const onUpdateConversation = (conversation: Conversation) => {
     dispatch({ type: 'UPDATE_CONVERSATION', payload: { conversation } });
   }
@@ -73,6 +78,7 @@ export const CodeReviewer: React.FC = () => {
         setSequence(['CONSOLIDATE', 'REFACTOR']);
         setCycles(1);
         setSelectedFilePaths(new Set());
+        setUserSelection(new Set());
         setRecommendedPaths(new Set());
       }
       prevConversationIdRef.current = conversation?.id;
@@ -82,31 +88,18 @@ export const CodeReviewer: React.FC = () => {
 
   }, [conversation]);
   
-  // Effect to filter files when accepted types change
+  // EFFECT: Syncs the visible selections (`selectedFilePaths`)
+  // based on user's intent (`userSelection`) and the current file type filter (`acceptedTypes`).
   useEffect(() => {
-    setFiles(currentFiles => {
-      if (currentFiles.length === 0) return currentFiles;
-
-      const updatedFiles = currentFiles.filter(file =>
-        acceptedTypes.some(type => file.name.endsWith(type) || type === '.zip')
-      );
-
-      if (updatedFiles.length !== currentFiles.length) {
-        const updatedFilePaths = new Set(updatedFiles.map(f => f.path));
-        setSelectedFilePaths(prevSelected => {
-          const newSelected = new Set<string>();
-          for (const path of prevSelected) {
-            if (updatedFilePaths.has(path)) {
-              newSelected.add(path);
-            }
-          }
-          return newSelected;
-        });
-        return updatedFiles;
+    const newSelectedPaths = new Set<string>();
+    for (const path of userSelection) {
+      // A file is selected if it's in the user's selection AND matches the accepted types.
+      if (acceptedTypes.some(type => path.endsWith(type))) {
+        newSelectedPaths.add(path);
       }
-      return currentFiles;
-    });
-  }, [acceptedTypes, setFiles, setSelectedFilePaths]);
+    }
+    setSelectedFilePaths(newSelectedPaths);
+  }, [acceptedTypes, userSelection]);
 
 
     const handleStreamingResponse = useCallback(async (
@@ -118,11 +111,11 @@ export const CodeReviewer: React.FC = () => {
         // Create the new history array ONCE, with a placeholder for the model's message.
         const streamingHistory = [...initialConversation.history.slice(0, -1), { role: 'model' as const, content: '' }];
         const conversationUpdateTemplate = { ...initialConversation, history: streamingHistory };
-    
+        const controller = abortControllersRef.current.get(initialConversation.id);
+
         let finalContent = '';
         for await (const chunk of stream) {
-            // The abort is now handled by the fetch signal, but this is a good safeguard.
-            if (abortControllerRef.current?.signal.aborted) {
+            if (controller?.signal.aborted) {
                 console.log("User aborted generation.");
                 break;
             }
@@ -144,7 +137,7 @@ export const CodeReviewer: React.FC = () => {
             console.error("Failed to count response tokens:", e);
         }
     
-        const finalContentWithStatus = abortControllerRef.current?.signal.aborted
+        const finalContentWithStatus = controller?.signal.aborted
             ? (finalContent + '\n\n*<生成已由使用者中止>*')
             : finalContent;
     
@@ -177,16 +170,9 @@ export const CodeReviewer: React.FC = () => {
   ) => {
     if (!conversation) return;
 
-    // If another request is running for another conversation, do not start
-    if (isSubmitting && submittingConversationId !== conversation.id) {
-        console.warn("Another submission is already in progress for a different conversation.");
-        // Revert optimistic UI update if we don't proceed
-        onUpdateConversation({ ...conversationForStreaming, history: historyForAPI });
-        return;
-    }
-
-    abortControllerRef.current = new AbortController();
-    setSubmittingConversationId(conversation.id);
+    const controller = new AbortController();
+    abortControllersRef.current.set(conversation.id, controller);
+    setSubmittingIds(prev => new Set(prev).add(conversation.id));
     setError('');
 
     const startTime = performance.now();
@@ -194,7 +180,7 @@ export const CodeReviewer: React.FC = () => {
         const masterPromptTemplate = MODES[mode].prompt;
         const masterPrompt = settings.forceDiff ? `${masterPromptTemplate}\n\n${DIFF_INSTRUCTION}` : masterPromptTemplate;
         const promptTokenCount = await countInputTokens(provider, filesToSubmit, messageToSend, imagesToSend, settings);
-        const signal = abortControllerRef.current.signal;
+        const signal = controller.signal;
 
         const stream = await generateChatStream({
             provider,
@@ -212,17 +198,22 @@ export const CodeReviewer: React.FC = () => {
     } catch (err) {
         console.error("Error during chat generation:", err);
         const errorMessage = err instanceof Error ? err.message : '與 AI 通訊時發生錯誤';
-        if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
+        const controller = abortControllersRef.current.get(conversation.id);
+        if (controller && !controller.signal.aborted) {
             setError(errorMessage);
             const currentHistory = [...conversationForStreaming.history];
             currentHistory[currentHistory.length - 1] = { role: 'model', content: `發生錯誤: ${errorMessage}` };
             onUpdateConversation({ ...conversationForStreaming, history: currentHistory });
         }
     } finally {
-       abortControllerRef.current = null;
-       setSubmittingConversationId(null);
+       abortControllersRef.current.delete(conversation.id);
+       setSubmittingIds(prev => {
+           const newSet = new Set(prev);
+           newSet.delete(conversation.id);
+           return newSet;
+       });
     }
-  }, [conversation, isSubmitting, submittingConversationId, onUpdateConversation, mode, provider, settings, handleStreamingResponse]);
+  }, [conversation, onUpdateConversation, mode, provider, settings, handleStreamingResponse, setSubmittingIds]);
     
   const handleSubmit = async (isFollowUp: boolean, followUpPayload?: { files: AppFile[], message: string, images: string[] }) => {
     const filesToSubmit = isFollowUp ? followUpPayload!.files : files.filter(f => selectedFilePaths.has(f.path));
@@ -282,18 +273,18 @@ export const CodeReviewer: React.FC = () => {
   };
 
   const handleStopGeneration = useCallback(() => {
-    abortControllerRef.current?.abort();
-    setSubmittingConversationId(null);
-  }, []);
+    if (!conversation) return;
+    const controller = abortControllersRef.current.get(conversation.id);
+    controller?.abort();
+  }, [conversation]);
 
   const handleDeleteFromTurn = (indexToDelete: number) => {
     if (!conversation) return;
 
-    const isDeletingCurrentGenerationTurn = isSubmitting && indexToDelete >= conversation.history.length - 2;
+    const isDeletingCurrentGenerationTurn = isCurrentConversationSubmitting && indexToDelete >= conversation.history.length - 2;
 
     if (isDeletingCurrentGenerationTurn) {
         handleStopGeneration();
-        setSubmittingConversationId(null);
     }
 
     const updatedHistory = conversation.history.slice(0, indexToDelete);
@@ -396,7 +387,7 @@ export const CodeReviewer: React.FC = () => {
     );
   }
   
-  if (submittingConversationId === conversation.id && conversation.history.length === 0 && mode !== 'WORKFLOW') {
+  if (isCurrentConversationSubmitting && conversation.history.length === 0 && mode !== 'WORKFLOW') {
     const filesToReview = files.filter(f => selectedFilePaths.has(f.path));
     return (
         <>
@@ -414,7 +405,7 @@ export const CodeReviewer: React.FC = () => {
             <ResultDisplay
                 history={conversation.history}
                 onFollowUp={onFollowUp}
-                isSubmitting={isSubmitting}
+                isSubmitting={isCurrentConversationSubmitting}
                 onDeleteFromTurn={handleDeleteFromTurn}
                 onRegenerate={handleRegenerate}
                 onStopGeneration={handleStopGeneration}
@@ -455,6 +446,8 @@ export const CodeReviewer: React.FC = () => {
             acceptedTypes={acceptedTypes}
             setAcceptedTypes={setAcceptedTypes}
             selectedFilePaths={selectedFilePaths}
+            // Pass down the new state and its setter
+            setUserSelection={setUserSelection}
             setSelectedFilePaths={setSelectedFilePaths}
             recommendedPaths={recommendedPaths}
             setRecommendedPaths={setRecommendedPaths}
@@ -526,7 +519,7 @@ export const CodeReviewer: React.FC = () => {
       <div className={`relative transition-all duration-300`}>
           <button
             onClick={handlePrimaryAction}
-            disabled={(mode !== 'WORKFLOW' && selectedFilePaths.size === 0 && pastedImages.length === 0) || isSubmitting}
+            disabled={(mode !== 'WORKFLOW' && selectedFilePaths.size === 0 && pastedImages.length === 0) || isCurrentConversationSubmitting}
             className="relative overflow-hidden w-full flex items-center justify-center gap-2 p-4 accent-gradient-bg text-white text-lg font-bold rounded-lg shadow-lg hover:shadow-xl hover:shadow-[var(--accent-color)]/20 transition-all duration-300 transform hover:-translate-y-px active:scale-[0.98] hover:brightness-105 active:brightness-110 disabled:from-stone-400 dark:disabled:from-slate-700 disabled:to-stone-300 dark:disabled:to-slate-600 disabled:text-stone-600 dark:disabled:text-slate-400 disabled:cursor-not-allowed disabled:transform-none before:absolute before:inset-0 before:bg-white/20 before:transition-opacity before:opacity-0 hover:before:opacity-100 before:duration-500 before:ease-in-out dark:before:bg-black/20 before:rounded-lg animate-subtle-pulse"
           >
               <div className="relative z-10 flex items-center justify-center gap-2">

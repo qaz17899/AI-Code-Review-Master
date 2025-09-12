@@ -21,7 +21,7 @@ export const WORKFLOW_MODES: ReviewMode[] = [
     'REVIEW', 'REFACTOR', 'SIMPLIFY', 'DOCS', 'CONSOLIDATE',
     'BUGFIX', 'OPTIMIZE', 'TESTER', 'SECURITY',
     'DESIGN', 'IMPLEMENT', 'SCALE', 'VERIFY', 'POLISH',
-    'Q&A', 'DESIGNER', 'ENHANCE', 'BALANCE'
+    'Q&A', 'DESIGNER', 'ENHANCE', 'BALANCE', 'INSIGHT', 'BLUEPRINT'
 ];
 
 export const SCOPING_PROMPT = `You are an expert code analysis AI. Your task is to identify which of the provided files are relevant to the user's request. Analyze the user's goal and the list of file paths to determine the necessary context for a complete and accurate response. Do NOT analyze the file contents, only the file paths.
